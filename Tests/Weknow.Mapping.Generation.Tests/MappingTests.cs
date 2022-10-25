@@ -31,9 +31,21 @@ namespace Weknow.Text.Json.Extensions.Tests
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Record3 c1 = d;
             Record3 c2 = di;
+            Record3 c3 = (Record3)di;
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+        }
+
+        [Fact]
+        public void Record3_ReadOnly_Test()
+        {
+            var c = new Record3("Hi") { Y = 2 };
+            IReadOnlyDictionary<string, object?> d = c.ToDictionary();
+            Record3 c1 = (Record3)(Dictionary<string, object?>)d;
+
+            Assert.Equal(c, c1);
         }
 
         [Fact]

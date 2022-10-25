@@ -162,7 +162,7 @@ partial {typeKind} {cls}: IDictionaryable
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{
 {string.Join($",{Environment.NewLine}",
-            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
                    .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
             }};
             return result;
@@ -180,7 +180,7 @@ partial {typeKind} {cls}: IDictionaryable
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{
 {string.Join($",{Environment.NewLine}",
-            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name ==  m.Name))
                    .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
             }};
             return result;
@@ -198,7 +198,7 @@ partial {typeKind} {cls}: IDictionaryable
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{
 {string.Join($",{Environment.NewLine}",
-            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
                    .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
             }};
             return result;
