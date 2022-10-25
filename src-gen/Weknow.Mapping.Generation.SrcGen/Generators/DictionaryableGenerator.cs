@@ -148,13 +148,79 @@ partial {typeKind} {cls}: IDictionaryable
 {{
         public static implicit operator {cls}(Dictionary<string, object> @source) => FromDictionary(@source);
         public static implicit operator {cls}(ImmutableDictionary<string, object> @source) => FromImmutableDictionary(@source);
+        private static readonly Type IDictionaryableType = typeof(IDictionaryable);
+
 
         /// <summary>
         /// Converts source dictionary.
         /// </summary>
         /// <param name=""source"">source of the data.</param>
         /// <returns></returns>
-        public static {cls} FromDictionary(Dictionary<string, object> @source)
+        public static bool TryFromDictionary(IDictionary<string, object> @source, out {cls} result)
+        {{
+            if (!IDictionaryableType.IsAssignableFrom(typeof(T)))
+            {{
+                result = default({cls});
+                return false;
+            }}
+            result = new {cls}({string.Join(Environment.NewLine,
+            parameters
+                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+            {{
+{string.Join($",{Environment.NewLine}",
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+            }};
+            return true;
+        }}
+
+        /// <summary>
+        /// Converts source dictionary.
+        /// </summary>
+        /// <param name=""source"">source of the data.</param>
+        /// <returns></returns>
+        public static bool TryFromReadOnlyDictionary(IReadOnlyDictionary<string, object> @source, out {cls} result)
+        {{
+            if (!IDictionaryableType.IsAssignableFrom(typeof(T)))
+            {{
+                result = default({cls});
+                return false;
+            }}
+            result = new {cls}({string.Join(Environment.NewLine,
+            parameters
+                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+            {{
+{string.Join($",{Environment.NewLine}",
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+            }};
+            return true;
+        }}
+
+        /// <summary>
+        /// Converts source dictionary.
+        /// </summary>
+        /// <param name=""source"">source of the data.</param>
+        /// <returns></returns>
+        public static {cls} FromDictionary(IDictionary<string, object> @source)
+        {{
+            {cls} result = new {cls}({string.Join(Environment.NewLine,
+            parameters
+                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+            {{
+{string.Join($",{Environment.NewLine}",
+            props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null)
+                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+            }};
+            return result;
+        }}
+
+        /// <summary>
+        /// Converts source dictionary.
+        /// </summary>
+        /// <param name=""source"">source of the data.</param>
+        /// <returns></returns>
+        public static {cls} FromReadOnlyDictionary(IReadOnlyDictionary<string, object> @source)
         {{
             {cls} result = new {cls}({string.Join(Environment.NewLine,
             parameters
