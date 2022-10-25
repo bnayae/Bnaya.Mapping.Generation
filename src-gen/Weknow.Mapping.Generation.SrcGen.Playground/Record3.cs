@@ -1,4 +1,6 @@
-﻿namespace Weknow.Mapping.Generation.SrcGen.Playground
+﻿using Weknow.Mapping;
+
+namespace Weknow.Generation.SrcGen.Playground
 {
     [Dictionaryable]
     public partial record Record3(string x)

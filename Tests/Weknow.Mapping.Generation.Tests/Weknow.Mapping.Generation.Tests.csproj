@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src-gen\Weknow.Mapping.Generation.SrcGen.Playground\Weknow.Mapping.Generation.SrcGen.Playground.csproj" />
+	  <ProjectReference Include="..\..\src-gen\Weknow.Mapping.Generation.SrcGen.Playground\Weknow.Mapping.Generation.SrcGen.Playground.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
-using System.Text;
-using System.Text.Json;
 
-using Weknow.Mapping.Generation.SrcGen.Playground;
+using Weknow.Generation.SrcGen.Playground;
 
 using Xunit;
 
@@ -28,7 +26,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Record3_Test()
         {
-            var c = new Record3 ( "Hi"){ Y = 2 };
+            var c = new Record3("Hi") { Y = 2 };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Record3 c1 = d;

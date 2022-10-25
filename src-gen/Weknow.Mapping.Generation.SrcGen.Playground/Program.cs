@@ -1,4 +1,4 @@
-﻿namespace Weknow.Mapping.Generation.SrcGen.Playground;
+﻿namespace Weknow.Generation.SrcGen.Playground;
 
 internal class Program
 {

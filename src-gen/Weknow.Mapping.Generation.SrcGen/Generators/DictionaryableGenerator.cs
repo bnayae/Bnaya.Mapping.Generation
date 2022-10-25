@@ -141,6 +141,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
         StringBuilder sb = new();
         sb.AppendLine(@$"
 using System.Collections.Immutable;
+using Weknow.Mapping;
 {ns}
 
 [System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]
