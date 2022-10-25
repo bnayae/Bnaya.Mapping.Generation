@@ -92,6 +92,16 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void Struct5_Test()
         {
             var c = new Struct5 { A = 1, B = 2 };
+            IReadOnlyDictionary<string, object> d = c.ToDictionary().ToDictionary(m => m.Key, m => m.Value ?? throw new Exception());
+            Struct5 c1 = Struct5.FromReadOnlyDictionary(d);
+
+            Assert.Equal(c, c1);
+        }
+
+        [Fact]
+        public void Struct5_Nullable_Test()
+        {
+            var c = new Struct5 { A = 1, B = 2 };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Struct5 c1 = d;
