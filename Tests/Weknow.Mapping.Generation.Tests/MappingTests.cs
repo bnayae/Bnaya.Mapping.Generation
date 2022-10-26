@@ -55,8 +55,8 @@ namespace Weknow.Text.Json.Extensions.Tests
             var d = c.ToDictionary();
             d[nameof(c.y)] = (long)c.y;
             d[nameof(c.Z)] = (long)c.Z;
-            Record3 c1 = Record3.Factory(d);
-            //Record3 c1 = d;
+            //Record3 c1 = Record3.Factory(d);
+            Record3 c1 = d;
             
             Assert.Equal(c, c1);
         }
