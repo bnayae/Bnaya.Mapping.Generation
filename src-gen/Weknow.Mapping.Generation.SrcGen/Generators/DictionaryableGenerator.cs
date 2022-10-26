@@ -87,31 +87,167 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
     #endregion // Generate
 
-
-
     #region FormatParameter(IParameterSymbol p)
 
     private static string FormatParameter(IParameterSymbol p)
     {
-        string fetch;
         string displayType = p.Type.ToDisplayString();
-        //if (displayType == "int?")
-        //{ 
-        //    fetch = @$"@source.ContainsKey(""{p.Name}"") 
-        //                ? Convert.ToInt32(@source[""{p.Name}""])
-        //                : default({p.Type.ToDisplayString()})";
-        //    return fetch;
-        //}
-
+        if (displayType == "float")
+        {
+            return @$"Convert.ToSingle(@source[""{p.Name}""])";
+        }
+        if (displayType == "float?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToSingle(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "double")
+        {
+            return @$"Convert.ToDouble(@source[""{p.Name}""])";
+        }
+        if (displayType == "double?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToDouble(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "ushort")
+        {
+            return @$"Convert.ToUInt16(@source[""{p.Name}""])";
+        }
+        if (displayType == "short?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToUInt16(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "short")
+        {
+            return @$"Convert.ToInt16(@source[""{p.Name}""])";
+        }
+        if (displayType == "short?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToInt16(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "ulong")
+        {
+            return @$"Convert.ToUInt64(@source[""{p.Name}""])";
+        }
+        if (displayType == "ulong?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToUInt64(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "long")
+        {
+            return @$"Convert.ToInt64(@source[""{p.Name}""])";
+        }
+        if (displayType == "long?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToInt64(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "uint")
+        {
+            return @$"Convert.ToUInt32(@source[""{p.Name}""])";
+        }
+        if (displayType == "uint?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToUInt32(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "int")
+        {
+            return @$"Convert.ToInt32(@source[""{p.Name}""])";
+        }
+        if (displayType == "int?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToInt32(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "sbyte")
+        {
+            return @$"Convert.ToSByte(@source[""{p.Name}""])";
+        }
+        if (displayType == "sbyte?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToSByte(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "bool")
+        {
+            return @$"Convert.ToBoolean(@source[""{p.Name}""])";
+        }
+        if (displayType == "bool?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToBoolean(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "DateTime")
+        {
+            return @$"Convert.ToDateTime(@source[""{p.Name}""])";
+        }
+        if (displayType == "DateTime?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToDateTime(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "char")
+        {
+            return @$"Convert.ToChar(@source[""{p.Name}""])";
+        }
+        if (displayType == "char?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToChar(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        if (displayType == "byte")
+        {
+            return @$"Convert.ToByte(@source[""{p.Name}""])";
+        }
+        if (displayType == "byte?")
+        {
+            return @$"@source.ContainsKey(""{p.Name}"") 
+                        ? Convert.ToByte(@source[""{p.Name}""])
+                        : default({displayType})";
+        }
+        
         if (p.IsOptional || p.NullableAnnotation == NullableAnnotation.Annotated)
         {
-            fetch = @$"@source.ContainsKey(""{p.Name}"") 
+            return @$"@source.ContainsKey(""{p.Name}"") 
                            ? ({displayType})@source[""{p.Name}""] 
                            : default({displayType})";
         }
-        else
-            fetch = $"({displayType})@source[\"{p.Name}\"]";
-        return $"{fetch} //  {p.ExplicitDefaultValue}";
+        return $"({displayType})@source[\"{p.Name}\"]";
+        //string fetch;
+        ////if (displayType == "int?")
+        ////{ 
+        ////    fetch = @$"@source.ContainsKey(""{p.Name}"") 
+        ////                ? Convert.ToInt32(@source[""{p.Name}""])
+        ////                : default({p.Type.ToDisplayString()})";
+        ////    return fetch;
+        ////}
+
+        //if (p.IsOptional || p.NullableAnnotation == NullableAnnotation.Annotated)
+        //{
+        //    fetch = @$"@source.ContainsKey(""{p.Name}"") 
+        //                   ? ({displayType})@source[""{p.Name}""] 
+        //                   : default({displayType})";
+        //}
+        //else
+        //    fetch = $"({displayType})@source[\"{p.Name}\"]";
+        //return $"{fetch} //  {p.ExplicitDefaultValue}";
     }
 
     #endregion // FormatParameter(IParameterSymbol p)
@@ -208,7 +344,7 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+                   .Select(FormatParameter))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
@@ -226,7 +362,7 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{ Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+                   .Select(FormatParameter))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name ==  m.Name))
@@ -244,7 +380,7 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
+                   .Select(FormatParameter))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
