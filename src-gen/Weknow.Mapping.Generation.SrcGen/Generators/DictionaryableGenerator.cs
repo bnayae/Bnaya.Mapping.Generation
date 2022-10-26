@@ -87,6 +87,55 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
     #endregion // Generate
 
+
+
+    #region FormatParameter(IParameterSymbol p)
+
+    private static string FormatParameter(IParameterSymbol p)
+    {
+        string fetch;
+        string displayType = p.Type.ToDisplayString();
+        //if (displayType == "int?")
+        //{ 
+        //    fetch = @$"@source.ContainsKey(""{p.Name}"") 
+        //                ? Convert.ToInt32(@source[""{p.Name}""])
+        //                : default({p.Type.ToDisplayString()})";
+        //    return fetch;
+        //}
+
+        if (p.IsOptional || p.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            fetch = @$"@source.ContainsKey(""{p.Name}"") 
+                           ? ({displayType})@source[""{p.Name}""] 
+                           : default({displayType})";
+        }
+        else
+            fetch = $"({displayType})@source[\"{p.Name}\"]";
+        return $"{fetch} //  {p.ExplicitDefaultValue}";
+    }
+
+    #endregion // FormatParameter(IParameterSymbol p)
+
+    #region FormatProperty(IPropertySymbol p)
+
+    private static string FormatProperty(IPropertySymbol? p)
+    {
+        if (p == null) throw new ArgumentNullException();
+        string fetch;
+        if (p.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            fetch = @$"                {p.Name} = @source.ContainsKey(""{p.Name}"") 
+                           ? ({p.Type.ToDisplayString()})@source[""{p.Name}""] 
+                           : default({p.Type.ToDisplayString()})";
+        }
+        else
+            fetch = $"                {p.Name} = ({p.Type.ToDisplayString()})@source[\"{p.Name}\"]";
+        return fetch;
+    }
+
+    #endregion // FormatProperty(IPropertySymbol p)
+
+
     #region GenerateMapper
 
     /// <summary>
@@ -163,7 +212,7 @@ partial {typeKind} {cls}: IDictionaryable
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+                   .Select(FormatProperty))}
             }};
             return result;
         }}
@@ -181,7 +230,7 @@ partial {typeKind} {cls}: IDictionaryable
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name ==  m.Name))
-                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+                   .Select(FormatProperty))}
             }};
             return result;
         }}
@@ -199,7 +248,7 @@ partial {typeKind} {cls}: IDictionaryable
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(m => $@"                 {m.Name} = @source.ContainsKey(""{m.Name}"") ? ({m.Type.Name})@source[""{m.Name}""] : default({m.Type.Name})"))}
+                   .Select(FormatProperty))}
             }};
             return result;
         }}
