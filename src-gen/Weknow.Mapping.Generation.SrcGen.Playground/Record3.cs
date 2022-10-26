@@ -3,8 +3,8 @@
 namespace Weknow.Generation.SrcGen.Playground
 {
     [Dictionaryable]
-    public partial record Record3(string x)
+    public partial record Record3(string x, int y)
     {
-        public int Y { get; init; }
+        public int Z { get; init; }
     };
 }

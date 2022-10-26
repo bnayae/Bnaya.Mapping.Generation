@@ -157,7 +157,7 @@ partial {typeKind} {cls}: IDictionaryable
         /// <returns></returns>
         public static {cls} FromDictionary(IDictionary<string, object> @source)
         {{
-            {cls} result = new {cls}({string.Join(Environment.NewLine,
+            {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{
@@ -175,7 +175,7 @@ partial {typeKind} {cls}: IDictionaryable
         /// <returns></returns>
         public static {cls} FromReadOnlyDictionary(IReadOnlyDictionary<string, object> @source)
         {{
-            {cls} result = new {cls}({string.Join(Environment.NewLine,
+            {cls} result = new {cls}({string.Join($",{ Environment.NewLine}\t\t\t\t",
             parameters
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{
@@ -193,7 +193,7 @@ partial {typeKind} {cls}: IDictionaryable
         /// <returns></returns>
         public static {cls} FromImmutableDictionary(ImmutableDictionary<string, object> @source)
         {{
-            {cls} result = new {cls}({string.Join(Environment.NewLine,
+            {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
                    .Select(p => $"({p.Type.Name})@source[\"{p.Name}\"]"))})
             {{

@@ -26,7 +26,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Record3_Test()
         {
-            var c = new Record3("Hi") { Y = 2 };
+            var c = new Record3("Hi", 1) { Z = 2 };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Record3 c1 = d;
@@ -41,7 +41,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Record3_ReadOnly_Test()
         {
-            var c = new Record3("Hi") { Y = 2 };
+            var c = new Record3("Hi", 1) { Z = 2 };
             IReadOnlyDictionary<string, object?> d = c.ToDictionary();
             Record3 c1 = (Record3)(Dictionary<string, object?>)d;
 
