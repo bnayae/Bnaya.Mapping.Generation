@@ -49,6 +49,19 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void Record3_Cast_Test()
+        {
+            var c = new Record3("Hi", 1.6) { Z = 2 };
+            var d = c.ToDictionary();
+            d[nameof(c.y)] = (long)c.y;
+            d[nameof(c.Z)] = (long)c.Z;
+            //Record3 c1 = Record3.Factory(d);
+            Record3 c1 = d;
+
+            Assert.Equal(c, c1);
+        }
+
+        [Fact]
         public void Record4_Test()
         {
             var c = new Record4 { A = 1, B = 2 };
