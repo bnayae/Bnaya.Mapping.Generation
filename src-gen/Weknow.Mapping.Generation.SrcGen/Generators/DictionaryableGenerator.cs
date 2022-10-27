@@ -87,157 +87,85 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
     #endregion // Generate
 
-    private static string FormatSymbol(string displayType, string name)
+    private static string FormatSymbol(string displayType, string name, string? defaultValue)
     {
-        if (displayType == "float")
+        string? convertTo = displayType switch
         {
-            return @$"Convert.ToSingle(@source[""{name}""])";
-        }
-        if (displayType == "float?")
+            "float" => "ToSingle",
+            "float?" => "ToSingle",
+
+            "double" => "ToDouble",
+            "double?" => "ToDouble",
+
+            "ushort" => "ToUInt16",
+            "ushort?" => "ToUInt16",
+
+            "short" => "ToUInt16",
+            "short?" => "ToUInt16",
+
+            "int" => "ToInt32",
+            "int?" => "ToInt32",
+
+            "uint" => "ToUInt32",
+            "uint?" => "ToUInt32",
+
+            "ulong" => "ToUInt64",
+            "ulong?" => "ToUInt64",
+
+            "long" => "ToInt64",
+            "long?" => "ToInt64",
+
+            "sbyte" => "ToSByte",
+            "sbyte?" => "ToSByte",
+
+            "bool" => "ToBoolean",
+            "bool?" => "ToBoolean",
+
+            "DateTime" => "ToDateTime",
+            "DateTime?" => "ToDateTime",
+
+            "char" => "ToChar",
+            "char?" => "ToChar",
+
+            "byte" => "ToByte",
+            "byte?" => "ToByte",
+
+            _ => null
+        };
+
+        if (convertTo == null)
         {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToSingle(@source[""{name}""])
-                        : default({displayType})";
+            if (defaultValue == null)
+            {
+                return @$"({displayType})@source[""{name}""]";
+            }
+
+            return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+                            ? ({displayType})@source[""{name}""])
+                            : {defaultValue}";
         }
-        if (displayType == "double")
+
+        if (defaultValue == null)
         {
-            return @$"Convert.ToDouble(@source[""{name}""])";
+            return @$"Convert.{convertTo}(@source[""{name}""])";
         }
-        if (displayType == "double?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToDouble(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "ushort")
-        {
-            return @$"Convert.ToUInt16(@source[""{name}""])";
-        }
-        if (displayType == "short?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToUInt16(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "short")
-        {
-            return @$"Convert.ToInt16(@source[""{name}""])";
-        }
-        if (displayType == "short?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToInt16(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "ulong")
-        {
-            return @$"Convert.ToUInt64(@source[""{name}""])";
-        }
-        if (displayType == "ulong?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToUInt64(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "long")
-        {
-            return @$"Convert.ToInt64(@source[""{name}""])";
-        }
-        if (displayType == "long?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToInt64(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "uint")
-        {
-            return @$"Convert.ToUInt32(@source[""{name}""])";
-        }
-        if (displayType == "uint?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToUInt32(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "int")
-        {
-            return @$"Convert.ToInt32(@source[""{name}""])";
-        }
-        if (displayType == "int?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToInt32(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "sbyte")
-        {
-            return @$"Convert.ToSByte(@source[""{name}""])";
-        }
-        if (displayType == "sbyte?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToSByte(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "bool")
-        {
-            return @$"Convert.ToBoolean(@source[""{name}""])";
-        }
-        if (displayType == "bool?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToBoolean(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "DateTime")
-        {
-            return @$"Convert.ToDateTime(@source[""{name}""])";
-        }
-        if (displayType == "DateTime?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToDateTime(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "char")
-        {
-            return @$"Convert.ToChar(@source[""{name}""])";
-        }
-        if (displayType == "char?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToChar(@source[""{name}""])
-                        : default({displayType})";
-        }
-        if (displayType == "byte")
-        {
-            return @$"Convert.ToByte(@source[""{name}""])";
-        }
-        if (displayType == "byte?")
-        {
-            return @$"@source.ContainsKey(""{name}"") 
-                        ? Convert.ToByte(@source[""{name}""])
-                        : default({displayType})";
-        }
-        return string.Empty;
+
+        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+                        ? Convert.{convertTo}(@source[""{name}""])
+                        : {defaultValue}";
     }
 
     #region FormatParameter(IParameterSymbol p)
 
     private static string FormatParameter(IParameterSymbol p)
     {
+        string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
-        string result = FormatSymbol(displayType, p.Name);
-        if (result != string.Empty)
-            return result;
+        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
 
-        if (p.IsOptional || p.NullableAnnotation == NullableAnnotation.Annotated)
-        {
-            return @$"@source.ContainsKey(""{p.Name}"") 
-                           ? ({displayType})@source[""{p.Name}""] 
-                           : default({displayType})";
-        }
-        return $"({displayType})@source[\"{p.Name}\"]";
+        string result = FormatSymbol(displayType, p.Name, defaultValue);
+        return result;
     }
 
     #endregion // FormatParameter(IParameterSymbol p)
@@ -247,20 +175,12 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private static string FormatProperty(IPropertySymbol? p)
     {
         string displayType = p.Type.ToDisplayString();
-        string result = FormatSymbol(displayType, p.Name);
-        if (result != string.Empty)
-            return $"{p.Name} = {result}";
-        if (p == null) throw new ArgumentNullException();
-        string fetch;
-        if (p.NullableAnnotation == NullableAnnotation.Annotated)
-        {
-            fetch = @$"                {p.Name} = @source.ContainsKey(""{p.Name}"") 
-                           ? ({displayType})@source[""{p.Name}""] 
-                           : default({displayType})";
-        }
-        else
-            fetch = $"                {p.Name} = ({displayType})@source[\"{p.Name}\"]";
-        return fetch;
+        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        string? defaultValue = isNullable ? $"default({displayType})" : null;
+
+
+        string result = FormatSymbol(displayType, p.Name, defaultValue);
+        return $"{p.Name} = {result}";
     }
 
     #endregion // FormatProperty(IPropertySymbol p)

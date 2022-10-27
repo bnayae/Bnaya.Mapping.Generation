@@ -53,7 +53,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         {
             var c = new Record3("Hi", 1.6) { Z = 2 };
             var d = c.ToDictionary();
-            d[nameof(c.y)] = (long)c.y;
+            d[nameof(c.y)] = (decimal)c.y;
             d[nameof(c.Z)] = (long)c.Z;
             //Record3 c1 = Record3.Factory(d);
             Record3 c1 = d;
