@@ -307,7 +307,7 @@ using Weknow.Mapping;
             }
 
             return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
-                            ? ({displayType})@source[""{name}""])
+                            ? ({displayType})@source[""{name}""]
                             : {defaultValue}";
         }
 

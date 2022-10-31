@@ -7,5 +7,6 @@ namespace Weknow.Generation.SrcGen.Playground
     {
         public int Z { get; init; }
         public int? W { get; init; }
+        public string? S { get; init; }
     };
 }
