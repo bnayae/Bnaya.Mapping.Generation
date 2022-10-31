@@ -208,7 +208,11 @@ partial {typeKind} {cls}: IDictionaryable
             var result = new Dictionary<string, object?>();
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
-                   .Select(m => $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
+                   .Select(m => 
+                   m.NullableAnnotation == NullableAnnotation.Annotated 
+                        ? $@"            if(this.{m.Name} != null) 
+                result.Add(""{m.Name}"", this.{m.Name});"
+                        : $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
             return result;
         }}
 
@@ -221,7 +225,11 @@ partial {typeKind} {cls}: IDictionaryable
             var result = ImmutableDictionary<string, object?>.Empty;
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
-                   .Select(m => $@"            result = result.Add(""{m.Name}"", this.{m.Name});"))}
+                   .Select(m =>
+                   m.NullableAnnotation == NullableAnnotation.Annotated
+                        ? $@"            if(this.{m.Name} != null) 
+                result.Add(""{m.Name}"", this.{m.Name});"
+                        : $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
             return result;
         }}
 }}
