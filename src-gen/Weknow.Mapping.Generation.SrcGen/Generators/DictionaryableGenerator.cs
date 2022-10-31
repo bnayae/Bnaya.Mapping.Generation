@@ -87,105 +87,6 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
     #endregion // Generate
 
-    private static string FormatSymbol(string displayType, string name, string? defaultValue)
-    {
-        string? convertTo = displayType switch
-        {
-            "float" => "ToSingle",
-            "float?" => "ToSingle",
-
-            "double" => "ToDouble",
-            "double?" => "ToDouble",
-
-            "ushort" => "ToUInt16",
-            "ushort?" => "ToUInt16",
-
-            "short" => "ToUInt16",
-            "short?" => "ToUInt16",
-
-            "int" => "ToInt32",
-            "int?" => "ToInt32",
-
-            "uint" => "ToUInt32",
-            "uint?" => "ToUInt32",
-
-            "ulong" => "ToUInt64",
-            "ulong?" => "ToUInt64",
-
-            "long" => "ToInt64",
-            "long?" => "ToInt64",
-
-            "sbyte" => "ToSByte",
-            "sbyte?" => "ToSByte",
-
-            "bool" => "ToBoolean",
-            "bool?" => "ToBoolean",
-
-            "DateTime" => "ToDateTime",
-            "DateTime?" => "ToDateTime",
-
-            "char" => "ToChar",
-            "char?" => "ToChar",
-
-            "byte" => "ToByte",
-            "byte?" => "ToByte",
-
-            _ => null
-        };
-
-        if (convertTo == null)
-        {
-            if (defaultValue == null)
-            {
-                return @$"({displayType})@source[""{name}""]";
-            }
-
-            return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
-                            ? ({displayType})@source[""{name}""])
-                            : {defaultValue}";
-        }
-
-        if (defaultValue == null)
-        {
-            return @$"Convert.{convertTo}(@source[""{name}""])";
-        }
-
-        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
-                        ? Convert.{convertTo}(@source[""{name}""])
-                        : {defaultValue}";
-    }
-
-    #region FormatParameter(IParameterSymbol p)
-
-    private static string FormatParameter(IParameterSymbol p)
-    {
-        string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
-        string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
-
-        string result = FormatSymbol(displayType, p.Name, defaultValue);
-        return result;
-    }
-
-    #endregion // FormatParameter(IParameterSymbol p)
-
-    #region FormatProperty(IPropertySymbol p)
-
-    private static string FormatProperty(IPropertySymbol? p)
-    {
-        string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string? defaultValue = isNullable ? $"default({displayType})" : null;
-
-
-        string result = FormatSymbol(displayType, p.Name, defaultValue);
-        return $"{p.Name} = {result}";
-    }
-
-    #endregion // FormatProperty(IPropertySymbol p)
-
-
     #region GenerateMapper
 
     /// <summary>
@@ -239,11 +140,6 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
         StringBuilder sb = new();
         sb.AppendLine(@$"
-using System.Collections.Immutable;
-using Weknow.Mapping;
-{ns}
-
-[System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]
 partial {typeKind} {cls}: IDictionaryable
 {{
         public static implicit operator {cls}(Dictionary<string, object> @source) => FromDictionary(@source);
@@ -330,10 +226,132 @@ partial {typeKind} {cls}: IDictionaryable
         }}
 }}
 ");
-        spc.AddSource($"{cls}.Mapper.cs", sb.ToString());
+        StringBuilder parents = new();
+        SyntaxNode? parent = syntax.Parent;
+        while (parent is ClassDeclarationSyntax pcls)
+        {
+            parents.Insert(0, $"{pcls.Identifier.Text}.");
+            sb.Replace(Environment.NewLine, $"{Environment.NewLine}\t");
+            sb.Insert(0,"\t");
+            sb.Insert(0, @$"
+partial class {pcls.Identifier.Text}
+{{");
+            sb.AppendLine(@"}
+");
+            parent = parent?.Parent;
+        }
+        sb.Insert(0,
+            @$"using System.Collections.Immutable;
+using Weknow.Mapping;
+{ns}
+
+[System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]");
+        spc.AddSource($"{parents}{cls}.Mapper.cs", sb.ToString());
     }
 
     #endregion // GenerateMapper
+
+    #region FormatSymbol
+
+    private static string FormatSymbol(string displayType, string name, string? defaultValue)
+    {
+        string? convertTo = displayType switch
+        {
+            "float" => "ToSingle",
+            "float?" => "ToSingle",
+
+            "double" => "ToDouble",
+            "double?" => "ToDouble",
+
+            "ushort" => "ToUInt16",
+            "ushort?" => "ToUInt16",
+
+            "short" => "ToUInt16",
+            "short?" => "ToUInt16",
+
+            "int" => "ToInt32",
+            "int?" => "ToInt32",
+
+            "uint" => "ToUInt32",
+            "uint?" => "ToUInt32",
+
+            "ulong" => "ToUInt64",
+            "ulong?" => "ToUInt64",
+
+            "long" => "ToInt64",
+            "long?" => "ToInt64",
+
+            "sbyte" => "ToSByte",
+            "sbyte?" => "ToSByte",
+
+            "bool" => "ToBoolean",
+            "bool?" => "ToBoolean",
+
+            "DateTime" => "ToDateTime",
+            "DateTime?" => "ToDateTime",
+
+            "char" => "ToChar",
+            "char?" => "ToChar",
+
+            "byte" => "ToByte",
+            "byte?" => "ToByte",
+
+            _ => null
+        };
+
+        if (convertTo == null)
+        {
+            if (defaultValue == null)
+            {
+                return @$"({displayType})@source[""{name}""]";
+            }
+
+            return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+                            ? ({displayType})@source[""{name}""])
+                            : {defaultValue}";
+        }
+
+        if (defaultValue == null)
+        {
+            return @$"Convert.{convertTo}(@source[""{name}""])";
+        }
+
+        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+                        ? Convert.{convertTo}(@source[""{name}""])
+                        : {defaultValue}";
+    }
+
+    #endregion // FormatSymbol
+
+    #region FormatParameter(IParameterSymbol p)
+
+    private static string FormatParameter(IParameterSymbol p)
+    {
+        string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
+        string displayType = p.Type.ToDisplayString();
+        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
+
+        string result = FormatSymbol(displayType, p.Name, defaultValue);
+        return result;
+    }
+
+    #endregion // FormatParameter(IParameterSymbol p)
+
+    #region FormatProperty(IPropertySymbol p)
+
+    private static string FormatProperty(IPropertySymbol? p)
+    {
+        string displayType = p.Type.ToDisplayString();
+        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        string? defaultValue = isNullable ? $"default({displayType})" : null;
+
+
+        string result = FormatSymbol(displayType, p.Name, defaultValue);
+        return $"\t\t\t{p.Name} = {result}";
+    }
+
+    #endregion // FormatProperty(IPropertySymbol p)
 
     #region ToGenerationInput
 
