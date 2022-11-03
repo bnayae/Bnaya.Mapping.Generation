@@ -16,7 +16,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
 {
     private const string TARGET_ATTRIBUTE = nameof(DictionaryableAttribute);
     private static readonly string TARGET_SHORT_ATTRIBUTE = nameof(DictionaryableAttribute).Replace("Attribute", "");
-    private const string COMPATIBILITY = "Flavor = Flavor.";
+    private const string FLAVOR = "Flavor = Flavor.";
 
     #region Initialize
 
@@ -110,9 +110,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                                         prd(m1.Name.ToString())))
                                         .Single()
                                         .Attributes.Single(m => prd(m.Name.ToString())).ArgumentList?.Arguments;
-        var compatibility = args?.Select(m => m.ToString())
-                .FirstOrDefault(m => m.StartsWith(COMPATIBILITY))
-                ?.Replace(COMPATIBILITY, "")
+        var flavor = args?.Select(m => m.ToString())
+                .FirstOrDefault(m => m.StartsWith(FLAVOR))
+                ?.Replace(FLAVOR, "")
                 .Trim() ?? nameof(Flavor.Default);
 
         var cls = syntax.Identifier.Text;
@@ -159,11 +159,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(compatibility, p)))})
+                   .Select(p => FormatParameter(flavor, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(compatibility, p)))}
+                   .Select(p => FormatProperty(flavor, p)))}
             }};
             return result;
         }}
@@ -177,11 +177,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(compatibility, p)))})
+                   .Select(p => FormatParameter(flavor, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(compatibility, p)))}
+                   .Select(p => FormatProperty(flavor, p)))}
             }};
             return result;
         }}
@@ -195,11 +195,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(compatibility, p)))})
+                   .Select(p => FormatParameter(flavor, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(compatibility, p)))}
+                   .Select(p => FormatProperty(flavor, p)))}
             }};
             return result;
         }}
@@ -254,7 +254,7 @@ partial class {pcls.Identifier.Text}
             parent = parent?.Parent;
         }
 
-        string additionalUsing = compatibility switch
+        string additionalUsing = flavor switch
         {
             nameof(Flavor.Neo4j) => $"{Environment.NewLine}using Neo4j.Driver;",
             _ => string.Empty
@@ -265,6 +265,9 @@ using Weknow.Mapping;{additionalUsing}
 {ns}
 
 [System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]");
+        sb.Insert(0, @$"// Generated at {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}
+// Flavor = {flavor}
+");
         spc.AddSource($"{parents}{cls}.Mapper.cs", sb.ToString());
     }
 
