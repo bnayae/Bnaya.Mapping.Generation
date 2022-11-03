@@ -1,6 +1,7 @@
 ﻿using System.CodeDom.Compiler;
 using System.Collections.Immutable;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -16,7 +17,8 @@ public class DictionaryableGenerator : IIncrementalGenerator
 {
     private const string TARGET_ATTRIBUTE = nameof(DictionaryableAttribute);
     private static readonly string TARGET_SHORT_ATTRIBUTE = nameof(DictionaryableAttribute).Replace("Attribute", "");
-    private const string FLAVOR = "Flavor = Flavor.";
+    private const string FLAVOR_START = "Flavor";
+    private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*Flavor\.");
 
     #region Initialize
 
@@ -111,9 +113,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                         .Single()
                                         .Attributes.Single(m => prd(m.Name.ToString())).ArgumentList?.Arguments;
         var flavor = args?.Select(m => m.ToString())
-                .FirstOrDefault(m => m.StartsWith(FLAVOR))
-                ?.Replace(FLAVOR, "")
+                .FirstOrDefault(m => m.StartsWith(FLAVOR_START))
                 .Trim() ?? nameof(Flavor.Default);
+        flavor = FLAVOR.Replace(flavor, "");
 
         var cls = syntax.Identifier.Text;
         SyntaxKind kind = syntax.Kind();
