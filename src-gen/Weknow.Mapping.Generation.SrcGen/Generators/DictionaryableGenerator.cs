@@ -281,10 +281,23 @@ using Weknow.Mapping;{additionalUsing}
     {
         return compatibility switch
         {
-            nameof(Flavor.Neo4j) => @$"(@source[""{name}""]).As<{displayType}>()",
+            nameof(Flavor.Neo4j) => FormatSymbolNeo4j(displayType, name, defaultValue),
             _ => FormatSymbolDefault(displayType, name, defaultValue)
         };
     }
+    private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue)
+    {
+        string convert = @$"@source[""{name}""].As<{displayType}>()";
+        if (defaultValue == null)
+        {
+            return convert;
+        }
+
+        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+                        ? {convert}
+                        : {defaultValue}";
+    }
+
     private static string FormatSymbolDefault(string displayType, string name, string? defaultValue)
     {
         string? convertTo = displayType switch
@@ -333,13 +346,14 @@ using Weknow.Mapping;{additionalUsing}
 
         if (convertTo == null)
         {
+            string convert = @$"({displayType})@source[""{name}""]";
             if (defaultValue == null)
             {
-                return @$"({displayType})@source[""{name}""]";
+                return convert;
             }
 
             return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
-                            ? ({displayType})@source[""{name}""]
+                            ? {convert}
                             : {defaultValue}";
         }
 
