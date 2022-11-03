@@ -16,6 +16,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
 {
     private const string TARGET_ATTRIBUTE = nameof(DictionaryableAttribute);
     private static readonly string TARGET_SHORT_ATTRIBUTE = nameof(DictionaryableAttribute).Replace("Attribute", "");
+    private const string COMPATIBILITY = "Flavor = Flavor.";
 
     #region Initialize
 
@@ -109,6 +110,10 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                                         prd(m1.Name.ToString())))
                                         .Single()
                                         .Attributes.Single(m => prd(m.Name.ToString())).ArgumentList?.Arguments;
+        var compatibility = args?.Select(m => m.ToString())
+                .FirstOrDefault(m => m.StartsWith(COMPATIBILITY))
+                ?.Replace(COMPATIBILITY, "")
+                .Trim() ?? nameof(Flavor.Default);
 
         var cls = syntax.Identifier.Text;
         SyntaxKind kind = syntax.Kind();
@@ -126,13 +131,13 @@ public class DictionaryableGenerator : IIncrementalGenerator
         ImmutableArray<IParameterSymbol> parameters = symbol.Constructors
             .Where(m => !(m.Parameters.Length == 1 && m.Parameters[0].Type.Name == cls))
             .Aggregate((acc, c) =>
-        {
-            int cl = c.Parameters.Length;
-            int accl = acc.Parameters.Length;
-            if (cl > accl)
-                return c;
-            return acc;
-        })?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+            {
+                int cl = c.Parameters.Length;
+                int accl = acc.Parameters.Length;
+                if (cl > accl)
+                    return c;
+                return acc;
+            })?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
 
 
 
@@ -154,11 +159,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(FormatParameter))})
+                   .Select(p => FormatParameter(compatibility, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(FormatProperty))}
+                   .Select(p => FormatProperty(compatibility, p)))}
             }};
             return result;
         }}
@@ -172,11 +177,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(FormatParameter))})
+                   .Select(p => FormatParameter(compatibility, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(FormatProperty))}
+                   .Select(p => FormatProperty(compatibility, p)))}
             }};
             return result;
         }}
@@ -190,11 +195,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(FormatParameter))})
+                   .Select(p => FormatParameter(compatibility, p)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(FormatProperty))}
+                   .Select(p => FormatProperty(compatibility, p)))}
             }};
             return result;
         }}
@@ -208,8 +213,8 @@ partial {typeKind} {cls}: IDictionaryable
             var result = new Dictionary<string, object?>();
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
-                   .Select(m => 
-                   m.NullableAnnotation == NullableAnnotation.Annotated 
+                   .Select(m =>
+                   m.NullableAnnotation == NullableAnnotation.Annotated
                         ? $@"            if(this.{m.Name} != null) 
                 result.Add(""{m.Name}"", this.{m.Name});"
                         : $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
@@ -228,8 +233,8 @@ partial {typeKind} {cls}: IDictionaryable
                    .Select(m =>
                    m.NullableAnnotation == NullableAnnotation.Annotated
                         ? $@"            if(this.{m.Name} != null) 
-                result.Add(""{m.Name}"", this.{m.Name});"
-                        : $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
+                result = result.Add(""{m.Name}"", this.{m.Name});"
+                        : $@"            result = result.Add(""{m.Name}"", this.{m.Name});"))}
             return result;
         }}
 }}
@@ -240,7 +245,7 @@ partial {typeKind} {cls}: IDictionaryable
         {
             parents.Insert(0, $"{pcls.Identifier.Text}.");
             sb.Replace(Environment.NewLine, $"{Environment.NewLine}\t");
-            sb.Insert(0,"\t");
+            sb.Insert(0, "\t");
             sb.Insert(0, @$"
 partial class {pcls.Identifier.Text}
 {{");
@@ -248,9 +253,15 @@ partial class {pcls.Identifier.Text}
 ");
             parent = parent?.Parent;
         }
+
+        string additionalUsing = compatibility switch
+        {
+            nameof(Flavor.Neo4j) => $"{Environment.NewLine}using Neo4j.Driver;",
+            _ => string.Empty
+        };
         sb.Insert(0,
             @$"using System.Collections.Immutable;
-using Weknow.Mapping;
+using Weknow.Mapping;{additionalUsing}
 {ns}
 
 [System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]");
@@ -261,7 +272,15 @@ using Weknow.Mapping;
 
     #region FormatSymbol
 
-    private static string FormatSymbol(string displayType, string name, string? defaultValue)
+    private static string FormatSymbol(string compatibility, string displayType, string name, string? defaultValue)
+    {
+        return compatibility switch
+        {
+            nameof(Flavor.Neo4j) => @$"(@source[""{name}""]).As<{displayType}>()",
+            _ => FormatSymbolDefault(displayType, name, defaultValue)
+        };
+    }
+    private static string FormatSymbolDefault(string displayType, string name, string? defaultValue)
     {
         string? convertTo = displayType switch
         {
@@ -333,14 +352,14 @@ using Weknow.Mapping;
 
     #region FormatParameter(IParameterSymbol p)
 
-    private static string FormatParameter(IParameterSymbol p)
+    private static string FormatParameter(string compatibility, IParameterSymbol p)
     {
         string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
 
-        string result = FormatSymbol(displayType, p.Name, defaultValue);
+        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue);
         return result;
     }
 
@@ -348,15 +367,15 @@ using Weknow.Mapping;
 
     #region FormatProperty(IPropertySymbol p)
 
-    private static string FormatProperty(IPropertySymbol? p)
+    private static string FormatProperty(string compatibility, IPropertySymbol? p)
     {
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         string? defaultValue = isNullable ? $"default({displayType})" : null;
 
 
-        string result = FormatSymbol(displayType, p.Name, defaultValue);
-        return $"\t\t\t{p.Name} = {result}";
+        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue);
+        return $"\t\t\t\t{p.Name} = {result}";
     }
 
     #endregion // FormatProperty(IPropertySymbol p)

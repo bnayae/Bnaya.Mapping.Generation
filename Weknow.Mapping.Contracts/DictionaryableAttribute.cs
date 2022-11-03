@@ -1,10 +1,13 @@
-﻿namespace Weknow.Mapping
+﻿namespace Weknow.Mapping;
+
+/// <summary>
+/// Code generation decoration of Mapping to and from dictionary
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
+public class DictionaryableAttribute : Attribute
 {
     /// <summary>
-    /// Code generation decoration of Mapping to and from dictionary
+    /// Gets or sets the generation compatibility.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
-    public class DictionaryableAttribute : Attribute
-    {
-    }
+    public Flavor Flavor { get; set; } = Flavor.Default;
 }
