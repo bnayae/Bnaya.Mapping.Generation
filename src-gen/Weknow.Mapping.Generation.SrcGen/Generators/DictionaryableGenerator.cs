@@ -142,14 +142,27 @@ public class DictionaryableGenerator : IIncrementalGenerator
             })?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
 
 
-
         StringBuilder sbMapper = new();
 
         StringBuilder sb = new();
         sb.AppendLine(@$"
 partial {typeKind} {cls}: IDictionaryable
 {{
+        /// <summary>
+        /// Performs an implicit conversion/>.
+        /// </summary>
+        /// <param name=""source"">The source</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
         public static implicit operator {cls}(Dictionary<string, object> @source) => FromDictionary(@source);
+        /// <summary>
+        /// Performs an implicit conversion/>.
+        /// </summary>
+        /// <param name=""source"">The source</param>
+        /// <returns>
+        /// The result of the conversion.
+        /// </returns>
         public static implicit operator {cls}(ImmutableDictionary<string, object> @source) => FromImmutableDictionary(@source);
  
         /// <summary>
