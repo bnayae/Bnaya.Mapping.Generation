@@ -146,6 +146,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
         StringBuilder sb = new();
         sb.AppendLine(@$"
+[System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]
 partial {typeKind} {cls}: IDictionaryable
 {{
         /// <summary>
@@ -278,8 +279,7 @@ partial class {pcls.Identifier.Text}
             @$"using System.Collections.Immutable;
 using Weknow.Mapping;{additionalUsing}
 {ns}
-
-[System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]");
+");
         sb.Insert(0, @$"// Generated at {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}
 // Flavor = {flavor}
 ");
