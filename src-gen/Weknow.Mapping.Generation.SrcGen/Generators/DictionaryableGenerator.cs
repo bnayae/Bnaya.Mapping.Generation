@@ -104,8 +104,19 @@ public class DictionaryableGenerator : IIncrementalGenerator
         GenerationInput item,
         Func<string, bool>? predicate = null)
     {
-        var symbol = item.Symbol;
+        INamedTypeSymbol symbol = item.Symbol;
+
+        //symbol.BaseType
         TypeDeclarationSyntax syntax = item.Syntax;
+        var cls = syntax.Identifier.Text;
+
+        var hierarchy = new List<INamedTypeSymbol> { symbol};
+        var s = symbol.BaseType;
+        while (s != null && s.Name != "Object")
+        {
+            hierarchy.Add(s);
+            s = s.BaseType;
+        }
 
         var prd = predicate ?? AttributePredicate;
         var args = syntax.AttributeLists.Where(m => m.Attributes.Any(m1 =>
@@ -117,7 +128,6 @@ public class DictionaryableGenerator : IIncrementalGenerator
                 .Trim() ?? nameof(Flavor.Default);
         flavor = FLAVOR.Replace(flavor, "");
 
-        var cls = syntax.Identifier.Text;
         SyntaxKind kind = syntax.Kind();
         string typeKind = kind switch
         {
@@ -129,7 +139,8 @@ public class DictionaryableGenerator : IIncrementalGenerator
         };
         string? nsCandidate = symbol.ContainingNamespace.ToString();
         string ns = nsCandidate != null ? $"namespace {nsCandidate};{Environment.NewLine}" : "";
-        IPropertySymbol?[] props = symbol.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null).ToArray();
+
+        IPropertySymbol?[] props = hierarchy.SelectMany(s => s.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null)).ToArray();
         ImmutableArray<IParameterSymbol> parameters = symbol.Constructors
             .Where(m => !(m.Parameters.Length == 1 && m.Parameters[0].Type.Name == cls))
             .Aggregate((acc, c) =>

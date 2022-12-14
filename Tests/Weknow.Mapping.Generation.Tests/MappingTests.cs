@@ -88,6 +88,19 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void RecordInheritance_Test()
+        {
+            var c = new RecordInheritance { A = 1, B = 2, C = 3 };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+            RecordInheritance c1 = d;
+            RecordInheritance c2 = di;
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+        }
+
+        [Fact]
         public void Record5_Test()
         {
             var c = new Record5 { A = 1, B = 2 };
