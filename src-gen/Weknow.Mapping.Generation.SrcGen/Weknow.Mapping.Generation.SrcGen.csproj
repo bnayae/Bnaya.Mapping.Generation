@@ -47,10 +47,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\Weknow.Mapping.Contracts\Weknow.Mapping.Contracts.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <None Update="icon.png">
 	    <Pack>True</Pack>
 	  </None>

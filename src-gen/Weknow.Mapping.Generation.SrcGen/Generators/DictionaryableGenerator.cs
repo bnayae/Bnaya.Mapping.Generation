@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-using Weknow.Mapping;
+//using Weknow.Mapping;
 
 // TODO: [bnaya 2022-10-24] Add ctor level attribue to select the From ctor
 // TODO: [bnaya 2022-10-24] Add conventions (camel / Pascal)
@@ -15,8 +15,8 @@ using Weknow.Mapping;
 [Generator]
 public class DictionaryableGenerator : IIncrementalGenerator
 {
-    private const string TARGET_ATTRIBUTE = nameof(DictionaryableAttribute);
-    private static readonly string TARGET_SHORT_ATTRIBUTE = nameof(DictionaryableAttribute).Replace("Attribute", "");
+    private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
+    private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*Flavor\.");
 
@@ -125,7 +125,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                         .Attributes.Single(m => prd(m.Name.ToString())).ArgumentList?.Arguments;
         var flavor = args?.Select(m => m.ToString())
                 .FirstOrDefault(m => m.StartsWith(FLAVOR_START))
-                .Trim() ?? nameof(Flavor.Default);
+                .Trim() ?? "Default";
         flavor = FLAVOR.Replace(flavor, "");
 
         SyntaxKind kind = syntax.Kind();
@@ -283,7 +283,7 @@ partial class {pcls.Identifier.Text}
 
         string additionalUsing = flavor switch
         {
-            nameof(Flavor.Neo4j) => $"{Environment.NewLine}using Neo4j.Driver;",
+            "Neo4j" => $"{Environment.NewLine}using Neo4j.Driver;",
             _ => string.Empty
         };
         sb.Insert(0,
@@ -305,7 +305,7 @@ using Weknow.Mapping;{additionalUsing}
     {
         return compatibility switch
         {
-            nameof(Flavor.Neo4j) => FormatSymbolNeo4j(displayType, name, defaultValue),
+            "Neo4j" => FormatSymbolNeo4j(displayType, name, defaultValue),
             _ => FormatSymbolDefault(displayType, name, defaultValue)
         };
     }
