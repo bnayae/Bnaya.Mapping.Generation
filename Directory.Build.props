@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<Version>1.0.26</Version>
 		<PackageReleaseNotes>
-			Move to .NET 7
+			Weknow.Mapping.Contracts should be reference directly
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
