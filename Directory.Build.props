@@ -1,6 +1,6 @@
 <Project>
 	<PropertyGroup>
-		<Version>1.0.26</Version>
+		<Version>1.0.27</Version>
 		<PackageReleaseNotes>
 			Move to .NET 7
 		</PackageReleaseNotes>
@@ -43,7 +43,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.85" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.86" PrivateAssets="All" />
 	</ItemGroup>
 	
 	<ItemGroup>
