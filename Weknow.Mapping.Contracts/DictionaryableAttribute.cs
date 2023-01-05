@@ -9,5 +9,5 @@ public class DictionaryableAttribute : Attribute
     /// <summary>
     /// Gets or sets the generation compatibility.
     /// </summary>
-    public Flavor Flavor { get; set; } = Flavor.Default;
+    public Flavor Flavor { get; set; } = Flavor.OpenCypher;
 }
