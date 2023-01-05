@@ -161,7 +161,16 @@ public class DictionaryableGenerator : IIncrementalGenerator
 partial {typeKind} {cls}: IDictionaryable
 {{
         /// <summary>
-        /// Performs an implicit conversion/>.
+        /// Convert To TimeSpan.
+        /// </summary>
+        /// <param name=""offset"">The offset</param>
+        /// <returns>
+        /// </returns>
+        private static TimeSpan ConvertToTimeSpan(Neo4j.Driver.OffsetTime offset) => 
+                new TimeSpan(0, offset.Hour, offset.Minute, offset.Second);
+
+        /// <summary>
+        /// Performs an implicit conversion.
         /// </summary>
         /// <param name=""source"">The source</param>
         /// <returns>
@@ -311,7 +320,12 @@ using Weknow.Mapping;{additionalUsing}
     }
     private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue)
     {
-        string convert = @$"@source[""{name}""].As<{displayType}>()";
+        string getter = @$"@source[""{name}""]";
+        string convert = @$"{getter}.As<{displayType}>()";
+        if (displayType == "System.TimeSpan")
+        {
+            convert = $"ConvertToTimeSpan({getter}.As<Neo4j.Driver.OffsetTime>())";
+        }
         if (defaultValue == null)
         {
             return convert;
