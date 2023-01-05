@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-//using Weknow.Mapping;
+namespace Weknow.Mapping;
 
 // TODO: [bnaya 2022-10-24] Add ctor level attribue to select the From ctor
 // TODO: [bnaya 2022-10-24] Add conventions (camel / Pascal)
@@ -18,7 +18,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
-    private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*Flavor\.");
+    private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*Mapping.Flavor\.(.*)");
 
     #region Initialize
 
@@ -126,7 +126,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
         var flavor = args?.Select(m => m.ToString())
                 .FirstOrDefault(m => m.StartsWith(FLAVOR_START))
                 .Trim() ?? "Default";
-        flavor = FLAVOR.Replace(flavor, "");
+        flavor = FLAVOR.Replace(flavor, "$1");
 
         SyntaxKind kind = syntax.Kind();
         string typeKind = kind switch
