@@ -19,7 +19,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
-    private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*Mapping.Flavor\.(.*)");
+    private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
 
     #region Initialize
 
@@ -160,24 +160,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
         sb.AppendLine(@$"
 [System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]
 partial {typeKind} {cls}: IDictionaryable
-{{
-        /// <summary>
-        /// Convert To TimeSpan.
-        /// </summary>
-        /// <param name=""offset"">The offset</param>
-        /// <returns>
-        /// </returns>
-        private static TimeSpan ConvertToTimeSpan(Neo4j.Driver.OffsetTime offset) => 
-                new TimeSpan(0, offset.Hour, offset.Minute, offset.Second);
-        /// <summary>
-        /// Convert To TimeSpan.
-        /// </summary>
-        /// <param name=""offset"">The offset</param>
-        /// <returns>
-        /// </returns>
-        private static TimeSpan ConvertToTimeSpan(Neo4j.Driver.LocalTime offset) => 
-                new TimeSpan(0, offset.Hour, offset.Minute, offset.Second);
-
+{{{ConvertNeo4jDate(flavor)}
         /// <summary>
         /// Performs an implicit conversion.
         /// </summary>
@@ -560,4 +543,29 @@ using Weknow.Mapping;{additionalUsing}
     }
 
     #endregion // TryGetJsonProperty
+
+    private static string ConvertNeo4jDate(string flavor)
+    {
+        if (flavor != "Neo4j")
+            return string.Empty;
+
+        return @"
+        /// <summary>
+        /// Convert To TimeSpan.
+        /// </summary>
+        /// <param name=""offset"">The offset</param>
+        /// <returns>
+        /// </returns>
+        private static TimeSpan ConvertToTimeSpan(Neo4j.Driver.OffsetTime offset) => 
+                new TimeSpan(0, offset.Hour, offset.Minute, offset.Second);
+        /// <summary>
+        /// Convert To TimeSpan.
+        /// </summary>
+        /// <param name=""offset"">The offset</param>
+        /// <returns>
+        /// </returns>
+        private static TimeSpan ConvertToTimeSpan(Neo4j.Driver.LocalTime offset) => 
+                new TimeSpan(0, offset.Hour, offset.Minute, offset.Second);
+";
+    }
 }
