@@ -1,6 +1,7 @@
 ﻿using System.CodeDom.Compiler;
 using System.Collections.Immutable;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using Microsoft.CodeAnalysis;
@@ -110,7 +111,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
         TypeDeclarationSyntax syntax = item.Syntax;
         var cls = syntax.Identifier.Text;
 
-        var hierarchy = new List<INamedTypeSymbol> { symbol};
+        var hierarchy = new List<INamedTypeSymbol> { symbol };
         var s = symbol.BaseType;
         while (s != null && s.Name != "Object")
         {
@@ -258,10 +259,13 @@ partial {typeKind} {cls}: IDictionaryable
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
-                   m.NullableAnnotation == NullableAnnotation.Annotated
-                        ? $@"            if(this.{m.Name} != null) 
-                result.Add(""{m.Name}"", this.{m.Name});"
-                        : $@"            result.Add(""{m.Name}"", this.{m.Name});"))}
+                   { 
+                       string name = GetPropNameOrAlias(m);
+                       if (m.NullableAnnotation == NullableAnnotation.Annotated)
+                           return $@"            if(this.{m.Name} != null) 
+                result.Add(""{name}"", this.{m.Name});";
+                       return $@"            result.Add(""{name}"", this.{m.Name});";
+                   }))}
             return result;
         }}
 
@@ -275,10 +279,13 @@ partial {typeKind} {cls}: IDictionaryable
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
-                   m.NullableAnnotation == NullableAnnotation.Annotated
-                        ? $@"            if(this.{m.Name} != null) 
-                result = result.Add(""{m.Name}"", this.{m.Name});"
-                        : $@"            result = result.Add(""{m.Name}"", this.{m.Name});"))}
+                   {
+                       string name = GetPropNameOrAlias(m);
+                       if (m.NullableAnnotation == NullableAnnotation.Annotated)
+                           return $@"            if(this.{m.Name} != null) 
+                result = result.Add(""{name}"", this.{m.Name});";
+                       return $@"            result = result.Add(""{name}"", this.{m.Name});";
+                   }))}
             return result;
         }}
 }}
@@ -438,8 +445,8 @@ using Weknow.Mapping;{additionalUsing}
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         string? defaultValue = isNullable ? $"default({displayType})" : null;
 
-
-        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue);
+        string name = GetPropNameOrAlias(p);
+        string result = FormatSymbol(compatibility, displayType, name, defaultValue);
         return $"\t\t\t\t{p.Name} = {result}";
     }
 
@@ -521,4 +528,36 @@ using Weknow.Mapping;{additionalUsing}
     }
 
     #endregion // SymVisitor
+
+    #region TryGetJsonProperty
+
+    private static string GetPropNameOrAlias(IPropertySymbol p)
+    {
+        var atts = p.GetAttributes();
+        string name = p.Name;
+        TryGetJsonProperty(atts, ref name);
+        return name;
+    }
+
+    private static bool TryGetJsonProperty(ImmutableArray<AttributeData> atts, ref string name)
+    {
+        if (atts.Length == 0)
+            return false;
+
+        var att = atts.Where(m => m.AttributeClass?.Name == "JsonPropertyNameAttribute")
+                      .FirstOrDefault();
+        TypedConstant? arg = att.ConstructorArguments.FirstOrDefault();
+        if (arg != null)
+        {
+            string? val = arg.Value.Value?.ToString();
+            if (val != null)
+            {
+                name = val;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    #endregion // TryGetJsonProperty
 }
