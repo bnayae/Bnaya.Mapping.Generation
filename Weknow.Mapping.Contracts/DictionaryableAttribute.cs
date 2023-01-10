@@ -10,4 +10,9 @@ public class DictionaryableAttribute : Attribute
     /// Gets or sets the generation compatibility.
     /// </summary>
     public Flavor Flavor { get; set; } = Flavor.OpenCypher;
+
+    /// <summary>
+    /// Gets or sets the property name convention.
+    /// </summary>
+    public PropertyNameConvention PropertyNameConvention { get; set; } = PropertyNameConvention.None;
 }

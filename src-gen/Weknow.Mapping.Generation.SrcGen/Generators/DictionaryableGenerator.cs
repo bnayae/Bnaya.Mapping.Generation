@@ -19,7 +19,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
+    private const string PROP_CONVENSION_START = "PropertyNameConvention";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
+    private readonly static Regex PROP_CONVENSION = new Regex(@"PropertyNameConvention\s*=\s*[\w|.]*PropertyNameConvention\.(.*)");
 
     #region Initialize
 
@@ -126,8 +128,12 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                         .Attributes.Single(m => prd(m.Name.ToString())).ArgumentList?.Arguments;
         var flavor = args?.Select(m => m.ToString())
                 .FirstOrDefault(m => m.StartsWith(FLAVOR_START))
-                .Trim() ?? "Default";
+                ?.Trim() ?? "Default";
         flavor = FLAVOR.Replace(flavor, "$1");
+        var propConvention = args?.Select(m => m.ToString())
+                .FirstOrDefault(m => m.StartsWith(PROP_CONVENSION_START))
+                ?.Trim() ?? "None";
+        propConvention = PROP_CONVENSION.Replace(propConvention, "$1");
 
         SyntaxKind kind = syntax.Kind();
         string typeKind = kind switch
@@ -242,12 +248,14 @@ partial {typeKind} {cls}: IDictionaryable
 {string.Join(Environment.NewLine,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
-                   { 
+                   {
+                       bool isEnum = m.Type.IsEnum();
+                       string suffix = isEnum ? ".ToString()" : string.Empty;
                        string name = GetPropNameOrAlias(m);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
-                result.Add(""{name}"", this.{m.Name});";
-                       return $@"            result.Add(""{name}"", this.{m.Name});";
+                result.Add(""{name}"", this.{m.Name}{suffix});";
+                       return $@"            result.Add(""{name}"", this.{m.Name}{suffix});";
                    }))}
             return result;
         }}
@@ -263,11 +271,13 @@ partial {typeKind} {cls}: IDictionaryable
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
                    {
+                       bool isEnum = m.Type.IsEnum();
+                       string suffix = isEnum ? ".ToString()" : string.Empty;
                        string name = GetPropNameOrAlias(m);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
-                result = result.Add(""{name}"", this.{m.Name});";
-                       return $@"            result = result.Add(""{name}"", this.{m.Name});";
+                result = result.Add(""{name}"", this.{m.Name}{suffix});";
+                       return $@"            result = result.Add(""{name}"", this.{m.Name}{suffix});";
                    }))}
             return result;
         }}
@@ -308,19 +318,23 @@ using Weknow.Mapping;{additionalUsing}
 
     #region FormatSymbol
 
-    private static string FormatSymbol(string compatibility, string displayType, string name, string? defaultValue)
+    private static string FormatSymbol(string compatibility, string displayType, string name, string? defaultValue, bool isEnum)
     {
         return compatibility switch
         {
-            "Neo4j" => FormatSymbolNeo4j(displayType, name, defaultValue),
+            "Neo4j" => FormatSymbolNeo4j(displayType, name, defaultValue, isEnum),
             _ => FormatSymbolDefault(displayType, name, defaultValue)
         };
     }
-    private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue)
+    private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue, bool isEnum)
     {
         string getter = @$"@source[""{name}""]";
         string convert = @$"{getter}.As<{displayType}>()";
-        if (displayType == "System.TimeSpan")
+        if (isEnum)
+        { 
+            convert = $"Enum.TryParse<{displayType}>((string)({getter}), true, out var {name}Enum) ? {name}Enum : {convert}";
+        }
+        else if (displayType == "System.TimeSpan")
         {
             convert = $"{getter}.GetType() == typeof(Neo4j.Driver.LocalTime) ? {convert} : ConvertToTimeSpan({getter}.As<Neo4j.Driver.OffsetTime>())";
         }
@@ -413,8 +427,9 @@ using Weknow.Mapping;{additionalUsing}
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
+        bool isEnum = p.Type.IsEnum();
 
-        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue);
+        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue, isEnum);
         return result;
     }
 
@@ -427,9 +442,10 @@ using Weknow.Mapping;{additionalUsing}
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         string? defaultValue = isNullable ? $"default({displayType})" : null;
+        bool isEnum = p.Type.IsEnum();
 
         string name = GetPropNameOrAlias(p);
-        string result = FormatSymbol(compatibility, displayType, name, defaultValue);
+        string result = FormatSymbol(compatibility, displayType, name, defaultValue, isEnum);
         return $"\t\t\t\t{p.Name} = {result}";
     }
 

@@ -161,5 +161,21 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
         }
+
+        [Fact]
+        public void RecordEnum_Test()
+        {
+            var c = new RecordEnum("1", ConsoleColor.Cyan) { Background = ConsoleColor.Red, Name = "Yos" };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordEnum c1 = d;
+            RecordEnum c2 = di;
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+             Assert.Equal(typeof(string), d["Background"].GetType());
+            Assert.Equal(typeof(string), di["Background"].GetType());
+       }
     }
 }
