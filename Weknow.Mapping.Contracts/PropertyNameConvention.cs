@@ -3,7 +3,7 @@
 /// <summary>
 /// Define property name manipulation
 /// </summary>
-public enum PropertyNameConvention
+public enum CaseConvention
 {
     None,
     camelCase,

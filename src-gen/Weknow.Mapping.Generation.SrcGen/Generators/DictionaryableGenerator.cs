@@ -19,9 +19,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
-    private const string PROP_CONVENSION_START = "PropertyNameConvention";
+    private const string PROP_CONVENSION_START = "CaseConvention";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
-    private readonly static Regex PROP_CONVENSION = new Regex(@"PropertyNameConvention\s*=\s*[\w|.]*PropertyNameConvention\.(.*)");
+    private readonly static Regex PROP_CONVENSION = new Regex(@"CaseConvention\s*=\s*[\w|.]*CaseConvention\.(.*)");
 
     #region Initialize
 
@@ -193,11 +193,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(flavor, p)))})
+                   .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(flavor, p)))}
+                   .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
             return result;
         }}
@@ -211,11 +211,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(flavor, p)))})
+                   .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(flavor, p)))}
+                   .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
             return result;
         }}
@@ -229,11 +229,11 @@ partial {typeKind} {cls}: IDictionaryable
         {{
             {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
             parameters
-                   .Select(p => FormatParameter(flavor, p)))})
+                   .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
 {string.Join($",{Environment.NewLine}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
-                   .Select(p => FormatProperty(flavor, p)))}
+                   .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
             return result;
         }}
@@ -251,7 +251,7 @@ partial {typeKind} {cls}: IDictionaryable
                    {
                        bool isEnum = m.Type.IsEnum();
                        string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = GetPropNameOrAlias(m);
+                       string name = GetPropNameOrAlias(m, propConvention);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
                 result.Add(""{name}"", this.{m.Name}{suffix});";
@@ -273,7 +273,7 @@ partial {typeKind} {cls}: IDictionaryable
                    {
                        bool isEnum = m.Type.IsEnum();
                        string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = GetPropNameOrAlias(m);
+                       string name = GetPropNameOrAlias(m, propConvention);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
                 result = result.Add(""{name}"", this.{m.Name}{suffix});";
@@ -318,17 +318,18 @@ using Weknow.Mapping;{additionalUsing}
 
     #region FormatSymbol
 
-    private static string FormatSymbol(string compatibility, string displayType, string name, string? defaultValue, bool isEnum)
+    private static string FormatSymbol(string compatibility, string displayType, string name, string? defaultValue, bool isEnum, string propConvention)
     {
         return compatibility switch
         {
-            "Neo4j" => FormatSymbolNeo4j(displayType, name, defaultValue, isEnum),
-            _ => FormatSymbolDefault(displayType, name, defaultValue)
+            "Neo4j" => FormatSymbolNeo4j(displayType, name, defaultValue, isEnum, propConvention),
+            _ => FormatSymbolDefault(displayType, name, defaultValue, propConvention)
         };
     }
-    private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue, bool isEnum)
+    private static string FormatSymbolNeo4j(string displayType, string name, string? defaultValue, bool isEnum, string propConvention)
     {
-        string getter = @$"@source[""{name}""]";
+        string entryName = name.ToPropNameConvention(propConvention);
+        string getter = @$"@source[""{entryName}""]";
         string convert = @$"{getter}.As<{displayType}>()";
         if (isEnum)
         { 
@@ -343,12 +344,12 @@ using Weknow.Mapping;{additionalUsing}
             return convert;
         }
 
-        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+        return @$"@source.ContainsKey(""{entryName}"") && @source[""{entryName}""] != null 
                         ? {convert}
                         : {defaultValue}";
     }
 
-    private static string FormatSymbolDefault(string displayType, string name, string? defaultValue)
+    private static string FormatSymbolDefault(string displayType, string name, string? defaultValue, string propConvention)
     {
         string? convertTo = displayType switch
         {
@@ -394,26 +395,28 @@ using Weknow.Mapping;{additionalUsing}
             _ => null
         };
 
+        string entryName = name.ToPropNameConvention(propConvention);
+
         if (convertTo == null)
         {
-            string convert = @$"({displayType})@source[""{name}""]";
+            string convert = @$"({displayType})@source[""{entryName}""]";
             if (defaultValue == null)
             {
                 return convert;
             }
 
-            return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
+            return @$"@source.ContainsKey(""{entryName}"") && @source[""{entryName}""] != null 
                             ? {convert}
                             : {defaultValue}";
         }
 
         if (defaultValue == null)
         {
-            return @$"Convert.{convertTo}(@source[""{name}""])";
+            return @$"Convert.{convertTo}(@source[""{entryName}""])";
         }
 
-        return @$"@source.ContainsKey(""{name}"") && @source[""{name}""] != null 
-                        ? Convert.{convertTo}(@source[""{name}""])
+        return @$"@source.ContainsKey(""{entryName}"") && @source[""{entryName}""] != null 
+                        ? Convert.{convertTo}(@source[""{entryName}""])
                         : {defaultValue}";
     }
 
@@ -421,15 +424,16 @@ using Weknow.Mapping;{additionalUsing}
 
     #region FormatParameter(IParameterSymbol p)
 
-    private static string FormatParameter(string compatibility, IParameterSymbol p)
+    private static string FormatParameter(string compatibility, IParameterSymbol p, string propConvention)
     {
         string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
         bool isEnum = p.Type.IsEnum();
+        string name = p.Name; 
 
-        string result = FormatSymbol(compatibility, displayType, p.Name, defaultValue, isEnum);
+        string result = FormatSymbol(compatibility, displayType, name, defaultValue, isEnum, propConvention);
         return result;
     }
 
@@ -437,16 +441,17 @@ using Weknow.Mapping;{additionalUsing}
 
     #region FormatProperty(IPropertySymbol p)
 
-    private static string FormatProperty(string compatibility, IPropertySymbol? p)
+    private static string FormatProperty(string compatibility, IPropertySymbol? p, string propConvention)
     {
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         string? defaultValue = isNullable ? $"default({displayType})" : null;
         bool isEnum = p.Type.IsEnum();
 
-        string name = GetPropNameOrAlias(p);
-        string result = FormatSymbol(compatibility, displayType, name, defaultValue, isEnum);
-        return $"\t\t\t\t{p.Name} = {result}";
+        string name = GetPropNameOrAlias(p, propConvention);
+        string result = FormatSymbol(compatibility, displayType, name, defaultValue, isEnum, propConvention);
+        string propName = p.Name;
+        return $"\t\t\t\t{propName} = {result}";
     }
 
     #endregion // FormatProperty(IPropertySymbol p)
@@ -530,10 +535,10 @@ using Weknow.Mapping;{additionalUsing}
 
     #region TryGetJsonProperty
 
-    private static string GetPropNameOrAlias(IPropertySymbol p)
+    private static string GetPropNameOrAlias(IPropertySymbol p, string propConvention)
     {
         var atts = p.GetAttributes();
-        string name = p.Name;
+        string name = p.ToPropNameConvention(propConvention); ;
         TryGetJsonProperty(atts, ref name);
         return name;
     }

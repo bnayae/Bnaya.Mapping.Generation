@@ -1,4 +1,5 @@
-﻿using Weknow.Mapping;
+﻿
+using Weknow.Mapping;
 
 namespace Weknow.Generation.SrcGen.Playground
 {

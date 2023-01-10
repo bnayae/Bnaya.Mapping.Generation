@@ -12,7 +12,7 @@ public class DictionaryableAttribute : Attribute
     public Flavor Flavor { get; set; } = Flavor.OpenCypher;
 
     /// <summary>
-    /// Gets or sets the property name convention.
+    /// Gets or sets the property name casing convention.
     /// </summary>
-    public PropertyNameConvention PropertyNameConvention { get; set; } = PropertyNameConvention.None;
+    public CaseConvention CaseConvention { get; set; } = CaseConvention.None;
 }
