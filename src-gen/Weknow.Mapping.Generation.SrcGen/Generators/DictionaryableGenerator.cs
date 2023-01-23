@@ -165,6 +165,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
         StringBuilder sb = new();
         sb.AppendLine(@$"
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8604 // Possible null reference argument.
+
 [System.CodeDom.Compiler.GeneratedCode(""Weknow.Mapping.Generation"", ""1.0.0"")]
 partial {typeKind} {cls}: IDictionaryable
 {{{ConvertNeo4jDate(flavor)}
