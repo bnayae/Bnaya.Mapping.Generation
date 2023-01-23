@@ -53,7 +53,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         {
             var c = new Record3("Hi", 1.6) { Z = 2 };
             var d = c.ToDictionary();
-            d[nameof(c.y)] = (decimal)c.y;
+            d[nameof(c.y)] = c.y;
             d[nameof(c.Z)] = (long)c.Z;
             //Record3 c1 = Record3.Factory(d);
             Record3 c1 = d;
@@ -130,7 +130,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void Struct5_Test()
         {
             var c = new Struct5 { A = 1, B = 2 };
-            IReadOnlyDictionary<string, object> d = c.ToDictionary().ToDictionary(m => m.Key, m => m.Value ?? throw new Exception());
+            IReadOnlyDictionary<string, object?> d = c.ToDictionary()
+                                                               .ToDictionary(
+                                                                    m => m.Key,
+                                                                    m => m.Value );
             Struct5 c1 = Struct5.FromReadOnlyDictionary(d);
 
             Assert.Equal(c, c1);
@@ -174,8 +177,8 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
-            Assert.Equal(typeof(string), d["Background"].GetType());
-            Assert.Equal(typeof(string), di["Background"].GetType());
+            Assert.Equal(typeof(string), d["Background"]?.GetType());
+            Assert.Equal(typeof(string), di["Background"]?.GetType());
         }
 
         [Fact]

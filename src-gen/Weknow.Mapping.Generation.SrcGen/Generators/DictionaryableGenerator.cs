@@ -22,6 +22,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string PROP_CONVENSION_START = "CaseConvention";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
     private readonly static Regex PROP_CONVENSION = new Regex(@"CaseConvention\s*=\s*[\w|.]*CaseConvention\.(.*)");
+    private const string NEW_LINE = "\n";
 
     #region Initialize
 
@@ -145,9 +146,9 @@ public class DictionaryableGenerator : IIncrementalGenerator
             _ => throw new Exception($"Illegal Type [{kind}]")
         };
         string? nsCandidate = symbol.ContainingNamespace.ToString();
-        string ns = nsCandidate != null ? $"namespace {nsCandidate};{Environment.NewLine}" : "";
+        string ns = nsCandidate != null ? $"namespace {nsCandidate};{NEW_LINE}" : "";
 
-        IPropertySymbol?[] props = hierarchy.SelectMany(s => s.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null)).ToArray();
+        var props = (IPropertySymbol[])(hierarchy.SelectMany(s => s.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null)).ToArray());
         ImmutableArray<IParameterSymbol> parameters = symbol.Constructors
             .Where(m => !(m.Parameters.Length == 1 && m.Parameters[0].Type.Name == cls))
             .Aggregate((acc, c) =>
@@ -174,7 +175,7 @@ partial {typeKind} {cls}: IDictionaryable
         /// <returns>
         /// The result of the conversion.
         /// </returns>
-        public static implicit operator {cls}(Dictionary<string, object> @source) => FromDictionary(@source);
+        public static implicit operator {cls}(Dictionary<string, object?> @source) => FromDictionary(@source);
         /// <summary>
         /// Performs an implicit conversion/>.
         /// </summary>
@@ -182,20 +183,20 @@ partial {typeKind} {cls}: IDictionaryable
         /// <returns>
         /// The result of the conversion.
         /// </returns>
-        public static implicit operator {cls}(ImmutableDictionary<string, object> @source) => FromImmutableDictionary(@source);
+        public static implicit operator {cls}(ImmutableDictionary<string, object?> @source) => FromImmutableDictionary(@source);
  
         /// <summary>
         /// Converts source dictionary.
         /// </summary>
         /// <param name=""source"">source of the data.</param>
         /// <returns></returns>
-        public static {cls} FromDictionary(IDictionary<string, object> @source)
+        public static {cls} FromDictionary(IDictionary<string, object?> @source)
         {{
-            {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
+            {cls} result = new {cls}({string.Join($",{NEW_LINE}\t\t\t\t",
             parameters
                    .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
-{string.Join($",{Environment.NewLine}",
+{string.Join($",{NEW_LINE}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
                    .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
@@ -207,13 +208,13 @@ partial {typeKind} {cls}: IDictionaryable
         /// </summary>
         /// <param name=""source"">source of the data.</param>
         /// <returns></returns>
-        public static {cls} FromReadOnlyDictionary(IReadOnlyDictionary<string, object> @source)
+        public static {cls} FromReadOnlyDictionary(IReadOnlyDictionary<string, object?> @source)
         {{
-            {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
+            {cls} result = new {cls}({string.Join($",{NEW_LINE}\t\t\t\t",
             parameters
                    .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
-{string.Join($",{Environment.NewLine}",
+{string.Join($",{NEW_LINE}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
                    .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
@@ -225,13 +226,13 @@ partial {typeKind} {cls}: IDictionaryable
         /// </summary>
         /// <param name=""source"">source of the data.</param>
         /// <returns></returns>
-        public static {cls} FromImmutableDictionary(ImmutableDictionary<string, object> @source)
+        public static {cls} FromImmutableDictionary(ImmutableDictionary<string, object?> @source)
         {{
-            {cls} result = new {cls}({string.Join($",{Environment.NewLine}\t\t\t\t",
+            {cls} result = new {cls}({string.Join($",{NEW_LINE}\t\t\t\t",
             parameters
                    .Select(p => FormatParameter(flavor, p, propConvention)))})
             {{
-{string.Join($",{Environment.NewLine}",
+{string.Join($",{NEW_LINE}",
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null && !parameters.Any(p => p.Name == m.Name))
                    .Select(p => FormatProperty(flavor, p, propConvention)))}
             }};
@@ -245,7 +246,7 @@ partial {typeKind} {cls}: IDictionaryable
         public Dictionary<string, object?> ToDictionary()
         {{
             var result = new Dictionary<string, object?>();
-{string.Join(Environment.NewLine,
+{string.Join(NEW_LINE,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
                    {
@@ -267,7 +268,7 @@ partial {typeKind} {cls}: IDictionaryable
         public ImmutableDictionary<string, object?> ToImmutableDictionary()
         {{
             var result = ImmutableDictionary<string, object?>.Empty;
-{string.Join(Environment.NewLine,
+{string.Join(NEW_LINE,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
                    .Select(m =>
                    {
@@ -288,7 +289,7 @@ partial {typeKind} {cls}: IDictionaryable
         while (parent is ClassDeclarationSyntax pcls)
         {
             parents.Insert(0, $"{pcls.Identifier.Text}.");
-            sb.Replace(Environment.NewLine, $"{Environment.NewLine}\t");
+            sb.Replace(NEW_LINE, $"{NEW_LINE}\t");
             sb.Insert(0, "\t");
             sb.Insert(0, @$"
 partial class {pcls.Identifier.Text}
@@ -300,7 +301,7 @@ partial class {pcls.Identifier.Text}
 
         string additionalUsing = flavor switch
         {
-            "Neo4j" => $"{Environment.NewLine}using Neo4j.Driver;",
+            "Neo4j" => $"{NEW_LINE}using Neo4j.Driver;",
             _ => string.Empty
         };
         sb.Insert(0,
@@ -441,7 +442,7 @@ using Weknow.Mapping;{additionalUsing}
 
     #region FormatProperty(IPropertySymbol p)
 
-    private static string FormatProperty(string compatibility, IPropertySymbol? p, string propConvention)
+    private static string FormatProperty(string compatibility, IPropertySymbol p, string propConvention)
     {
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
@@ -474,8 +475,7 @@ using Weknow.Mapping;{additionalUsing}
 
     #endregion // ToGenerationInput
 
-    #region Validation
-
+    #region AttributePredicate
 
     /// <summary>
     /// The predicate whether match to the target attribute
@@ -490,7 +490,7 @@ using Weknow.Mapping;{additionalUsing}
                candidate == TARGET_SHORT_ATTRIBUTE;
     }
 
-    #endregion // Validation    AttributePredicate
+    #endregion // AttributePredicate
 
     #region SymVisitor
 
@@ -521,7 +521,7 @@ using Weknow.Mapping;{additionalUsing}
                 }
             }
 
-            var ps = symbol.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null);
+            var ps = (IEnumerable<IPropertySymbol>)(symbol.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null));
             foreach (IPropertySymbol m in ps ?? Array.Empty<IPropertySymbol>())
             {
                 Properties = Properties.Add(m);
