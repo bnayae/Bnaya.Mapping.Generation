@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<LangVersion>10</LangVersion>
+		<Nullable>enable</Nullable>
+		<Description>Code generator for Weknow.Mapping</Description>
+		<Configurations>Debug;Release;Gen</Configurations>
+		<RootNamespace>Weknow.TypesUtility</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<LangVersion>10</LangVersion>
+		<Nullable>enable</Nullable>
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<Description>Type utilities mimic Typescript functionality.
+https://www.typescriptlang.org/docs/handbook/utility-types.htm</Description>
+		<Configurations>Debug;Release;Gen</Configurations>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="bin\**" />
+	  <EmbeddedResource Remove="bin\**" />
+	  <None Remove="bin\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" Version="4.4.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0" />
+		<PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="4.4.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<!--<PackageReference Include="System.CodeDom" Version="6.0.0" />-->
+	</ItemGroup>
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeSource>False</IncludeSource>
+		<IncludeSymbols>False</IncludeSymbols>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		<EnableNETAnalyzers>True</EnableNETAnalyzers>
+		<PackageReleaseNotes />
+		<PackageTags>Type, Utility, generated, weknow, bnaya, Partial</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="bin\Debug\netstandard2.0\\Weknow.TypesUtility.Generation.SrcGen.dll" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="icon.png">
+	    <Pack>True</Pack>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+	</ItemGroup>
+
+</Project>

@@ -19,8 +19,8 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
-    private const string PROP_CONVENSION_START = "CaseConvention";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
+    private const string PROP_CONVENSION_START = "CaseConvention";
     private readonly static Regex PROP_CONVENSION = new Regex(@"CaseConvention\s*=\s*[\w|.]*CaseConvention\.(.*)");
     private const string NEW_LINE = "\n";
 
