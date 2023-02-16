@@ -341,7 +341,7 @@ using Weknow.Mapping;{additionalUsing}
         }
         else if (displayType == "System.TimeSpan")
         {
-            convert = $"{getter}.GetType() == typeof(Neo4j.Driver.LocalTime) ? {convert} : ConvertToTimeSpan({getter}.As<Neo4j.Driver.OffsetTime>())";
+            convert = $"{getter}?.GetType() == typeof(Neo4j.Driver.LocalTime) ? {convert} : ConvertToTimeSpan({getter}.As<Neo4j.Driver.OffsetTime>())";
         }
         if (defaultValue == null)
         {
