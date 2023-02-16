@@ -27,17 +27,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    
-    #- name: Increment Version
-    #  run: |
-    #    perl -pi -e 's/([0-9]+)\.([0-9]+)\.([0-9]+)/"$1.$2.${\( $3+1 )}"/eg' Directory.Build.props
-    #- name: Commit changes
-    #  uses: EndBug/add-and-commit@v7
-    #  with:
-    #    author_name: CI/CD
-    #    author_email: bnaya@weknow.network.com
-    #    message: 'Increment Version'
-    #    add: 'Directory.Build.props'  
         
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -48,12 +37,12 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore /property:Configuration=${{ env.BUILD_CONFIG }}
     - name: Build
-      run: dotnet build  --configuration ${{ env.BUILD_CONFIG }} --no-restore -o out
+      run: dotnet build  --configuration ${{ env.BUILD_CONFIG }} --no-restore
     #- name: Test
-    #  run: dotnet test Tests/Weknow.Mapping.Generation.UnitTests --configuration ${{ env.BUILD_CONFIG }} --no-restore --no-build --verbosity normal -o out
+    #  run: dotnet test Tests/Weknow.Mapping.Generation.UnitTests --configuration ${{ env.BUILD_CONFIG }} --no-restore --no-build --verbosity normal
 
     - name: Push generated package to GitHub registry
-      run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate 
+      run: dotnet nuget push ./**/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate 
 
   src-gen:
 
@@ -72,7 +61,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore /property:Configuration=Gen
     - name: Build
-      run: dotnet build  --configuration Gen --no-restore -o out
+      run: dotnet build  --configuration Gen --no-restore
 
     - name: Push generated package to GitHub registry
-      run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+      run: dotnet nuget push ./**/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate
