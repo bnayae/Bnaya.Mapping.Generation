@@ -2,7 +2,10 @@
 	<PropertyGroup>
 		<Version>1.0.42</Version>
 		<PackageReleaseNotes>
-			Weknow.Mapping.Contracts should be reference directly
+			- ##1.0.40:## 
+			  Weknow.Mapping.Contracts should be reference directly
+			- ##1.0.43:## 
+			  Flexible property naming convention when converting to an object 
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	

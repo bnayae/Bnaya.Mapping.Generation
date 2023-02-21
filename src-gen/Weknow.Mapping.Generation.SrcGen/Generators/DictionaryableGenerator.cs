@@ -21,8 +21,8 @@ public class DictionaryableGenerator : IIncrementalGenerator
     private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
-    //private const string PROP_CONVENSION_START = "CaseConvention";
-    //private readonly static Regex PROP_CONVENSION = new Regex(@"CaseConvention\s*=\s*[\w|.]*CaseConvention\.(.*)");
+    private const string PROP_CONVENSION_START = "CaseConvention";
+    private readonly static Regex PROP_CONVENSION = new Regex(@"CaseConvention\s*=\s*[\w|.]*CaseConvention\.(.*)");
     private const string NEW_LINE = "\n";
 
     #region Initialize
@@ -132,10 +132,10 @@ public class DictionaryableGenerator : IIncrementalGenerator
                 .FirstOrDefault(m => m.StartsWith(FLAVOR_START))
                 ?.Trim() ?? "Default";
         flavor = FLAVOR.Replace(flavor, "$1");
-        //var propConvention = args?.Select(m => m.ToString())
-        //        .FirstOrDefault(m => m.StartsWith(PROP_CONVENSION_START))
-        //        ?.Trim() ?? "None";
-        //propConvention = PROP_CONVENSION.Replace(propConvention, "$1");
+        var propConvention = args?.Select(m => m.ToString())
+                .FirstOrDefault(m => m.StartsWith(PROP_CONVENSION_START))
+                ?.Trim() ?? "None";
+        propConvention = PROP_CONVENSION.Replace(propConvention, "$1");
 
         SyntaxKind kind = syntax.Kind();
         string typeKind = kind switch
@@ -149,7 +149,11 @@ public class DictionaryableGenerator : IIncrementalGenerator
         string? nsCandidate = symbol.ContainingNamespace.ToString();
         string ns = nsCandidate != null ? $"namespace {nsCandidate};{NEW_LINE}" : "";
 
-        var props = (IPropertySymbol[])(hierarchy.SelectMany(s => s.GetMembers().Select(m => m as IPropertySymbol).Where(m => m != null)).ToArray());
+        var props = (IPropertySymbol[])(hierarchy
+                            .SelectMany(s => s.GetMembers()
+                                             .Select(m => m as IPropertySymbol)
+                                            .Where(m => m != null && m.Name != "EqualityContract"))
+                            .ToArray());
         ImmutableArray<IParameterSymbol> parameters = symbol.Constructors
             .Where(m => !(m.Parameters.Length == 1 && m.Parameters[0].Type.Name == cls))
             .Aggregate((acc, c) =>
@@ -259,7 +263,8 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
                    {
                        bool isEnum = m.Type.IsEnum();
                        string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = GetPropNameOrAlias(m);
+                       string name = GetPropNameOrAlias(m)
+                                        .ToPropNameConvention(propConvention);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
                 result.Add(""{name}"", this.{m.Name}{suffix});";
@@ -281,7 +286,7 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
                    {
                        bool isEnum = m.Type.IsEnum();
                        string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = m.Name;
+                       string name = m.Name.ToPropNameConvention(propConvention);
                        if (m.NullableAnnotation == NullableAnnotation.Annotated)
                            return $@"            if(this.{m.Name} != null) 
                 result = result.Add(""{name}"", this.{m.Name}{suffix});";
@@ -290,7 +295,7 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
             return result;
         }}
 
-        {GetterFn(parameters, props)}
+        {GetterFn(props)}
 }}
 ");
         StringBuilder parents = new();
@@ -330,18 +335,18 @@ using Weknow.Mapping;{additionalUsing}
     #region GetterFn
 
     private static string GetterFn(
-                    IEnumerable<IParameterSymbol> prms,
+                    //IEnumerable<IParameterSymbol> prms,
                     IEnumerable<IPropertySymbol> props)
     {
         ConcurrentDictionary<string, object?> getterFnExists = new ConcurrentDictionary<string, object?>();
 
         var sb = new StringBuilder();
-        foreach (var item in prms)
-        {
-            string gen = GetterFn(getterFnExists, item);
-            if(!string.IsNullOrEmpty(gen))
-                sb.AppendLine(gen);
-        }
+        //foreach (var item in prms)
+        //{
+        //    string gen = GetterFn(getterFnExists, item);
+        //    if(!string.IsNullOrEmpty(gen))
+        //        sb.AppendLine(gen);
+        //}
         foreach (var item in props)
         {
             string gen = GetterFn(getterFnExists, item);
@@ -382,12 +387,13 @@ using Weknow.Mapping;{additionalUsing}
             return string.Empty;
 
         var sb = new StringBuilder();
-        var set = new ConcurrentDictionary<string, object>();
-        set.TryAdd(name, null);
-        set.TryAdd(name.ToCamelCase(), null);
-        set.TryAdd(name.ToDash(), null);
-        set.TryAdd(name.ToPascalCase(), null);
-        set.TryAdd(name.ToLower(), null);
+        var set = new ConcurrentDictionary<string, int>();
+        set.TryAdd(name, 1);
+        set.TryAdd(name.ToCamelCase(), 2);
+        set.TryAdd(name.ToDash(), 3);
+        set.TryAdd(name.ToPascalCase(), 4);
+        set.TryAdd(name.ToLower(), 5);
+        set.TryAdd(name.ToSCREAMING(), 6);
         string indent = "\t\t";
         sb.AppendLine($"{indent}private static object? GetValueOf_{name}(TryGetValue tryGet)");
         sb.AppendLine($"{indent}{{");
@@ -398,8 +404,9 @@ using Weknow.Mapping;{additionalUsing}
         sb.AppendLine($"{indent}private static bool TryGetValueOf_{name}(TryGetValue tryGet, out object? value)");
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}\tvalue = {defaultValue ?? "null"};");
-        foreach (var k in set.Keys)
+        foreach (var kv in set.OrderBy(m => m.Value))
         {
+            string k = kv.Key;
             sb.AppendLine($@"{indent}    if(tryGet(""{k}"", out value))");
             sb.AppendLine($@"{indent}        return true;");
         }
