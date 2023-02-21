@@ -97,6 +97,31 @@ public class DictionaryableGenerator : IIncrementalGenerator
 
     #endregion // Generate
 
+    #region ConvertProp
+
+    private static string ConvertProp(
+        IPropertySymbol p, string propConvention, bool immutable)
+    {
+        bool isEnum = p.Type.IsEnum();
+        string suffix = isEnum ? ".ToString()" : string.Empty;
+        if (!TryGetJsonProperty(p, out string name))
+            name = p.Name.ToPropNameConvention(propConvention);
+        var sb = new StringBuilder();
+        if (p.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            sb.AppendLine($"\t\tif(this.{p.Name} != null)");
+            sb.Append("\t");
+        }
+        sb.Append("\t\t");
+        if (immutable)
+            sb.Append("result = ");
+        sb.AppendLine($"result.Add(\"{name}\", this.{p.Name}{suffix});");
+
+        return sb.ToString();
+    }
+
+    #endregion // ConvertProp
+
     #region GenerateMapper
 
     /// <summary>
@@ -261,17 +286,7 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
             var result = new Dictionary<string, object?>();
 {string.Join(NEW_LINE,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
-                   .Select(m =>
-                   {
-                       bool isEnum = m.Type.IsEnum();
-                       string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = GetPropNameOrAlias(m)
-                                        .ToPropNameConvention(propConvention);
-                       if (m.NullableAnnotation == NullableAnnotation.Annotated)
-                           return $@"            if(this.{m.Name} != null) 
-                result.Add(""{name}"", this.{m.Name}{suffix});";
-                       return $@"            result.Add(""{name}"", this.{m.Name}{suffix});";
-                   }))}
+                   .Select(m => ConvertProp(m, propConvention, false)))}
             return result;
         }}
 
@@ -284,20 +299,11 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
             var result = ImmutableDictionary<string, object?>.Empty;
 {string.Join(NEW_LINE,
             props.Where(m => m.DeclaredAccessibility == Accessibility.Public)
-                   .Select(m =>
-                   {
-                       bool isEnum = m.Type.IsEnum();
-                       string suffix = isEnum ? ".ToString()" : string.Empty;
-                       string name = m.Name.ToPropNameConvention(propConvention);
-                       if (m.NullableAnnotation == NullableAnnotation.Annotated)
-                           return $@"            if(this.{m.Name} != null) 
-                result = result.Add(""{name}"", this.{m.Name}{suffix});";
-                       return $@"            result = result.Add(""{name}"", this.{m.Name}{suffix});";
-                   }))}
+                   .Select(m => ConvertProp(m, propConvention, true)))}
             return result;
         }}
 
-        {GetterFn(props)}
+{GetterFn(props)}
 }}
 ");
         StringBuilder parents = new();
@@ -368,7 +374,6 @@ using Weknow.Mapping;{additionalUsing}
         //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
         string defaultValue1 = defaultValue ?? $"default({displayType})";
         string name = p.Name;
-
         return GetterFn(getterFnExists, name, defaultValue1, isEnum, displayType);
     }
 
@@ -381,20 +386,22 @@ using Weknow.Mapping;{additionalUsing}
         string defaultValue = $"default({displayType})";
         bool isEnum = p.Type.IsEnum();
         string name = p.Name;
-
-        return GetterFn(getterFnExists, name, defaultValue, isEnum, displayType);
+        TryGetJsonProperty(p, out string jsonName);
+        return GetterFn(getterFnExists, name, defaultValue, isEnum, displayType, jsonName);
     }
 
 
     private static string GetterFn(
         ConcurrentDictionary<string, object?> getterFnExists,
-        string name, string defaultValue, bool isEnum, string displayType)
+        string name, string defaultValue, bool isEnum, string displayType, string? jsonName = null)
     {
         if (!getterFnExists.TryAdd(name, null))
             return string.Empty;
 
         var sb = new StringBuilder();
         var set = new ConcurrentDictionary<string, int>();
+        if (jsonName != null)
+            set.TryAdd(jsonName, 0);
         set.TryAdd(name, 1);
         set.TryAdd(name.ToCamelCase(), 2);
         set.TryAdd(name.ToDash(), 3);
@@ -422,7 +429,7 @@ using Weknow.Mapping;{additionalUsing}
             {
                 sb.AppendLine($@"{indent}        Enum.TryParse<{displayType}>((string)(value), true, out e);");
                 sb.AppendLine($@"{indent}        value = e;");
-            }        
+            }
             sb.AppendLine($@"{indent}        return true;");
             sb.AppendLine($@"{indent}    }}");
         }
@@ -663,27 +670,34 @@ using Weknow.Mapping;{additionalUsing}
     private static string GetPropNameOrAlias(IPropertySymbol p)
     {
         var atts = p.GetAttributes();
-        string name = p.Name;
-        TryGetJsonProperty(atts, ref name);
-        return name;
+        if (TryGetJsonProperty(atts, out string name))
+            return name;
+        return p.Name;
     }
 
-    private static bool TryGetJsonProperty(ImmutableArray<AttributeData> atts, ref string name)
+    private static bool TryGetJsonProperty(IPropertySymbol p, out string name)
     {
+        var atts = p.GetAttributes();
+        return TryGetJsonProperty(atts, out name);
+    }
+
+    private static bool TryGetJsonProperty(ImmutableArray<AttributeData> atts, out string name)
+    {
+        name = string.Empty;
         if (atts.Length == 0)
             return false;
 
         var att = atts.Where(m => m.AttributeClass?.Name == "JsonPropertyNameAttribute")
                       .FirstOrDefault();
         TypedConstant? arg = att.ConstructorArguments.FirstOrDefault();
-        if (arg != null)
+        if (arg == null)
+            return false;
+
+        string? val = arg.Value.Value?.ToString();
+        if (val != null)
         {
-            string? val = arg.Value.Value?.ToString();
-            if (val != null)
-            {
-                name = val;
-                return true;
-            }
+            name = val;
+            return true;
         }
         return false;
     }

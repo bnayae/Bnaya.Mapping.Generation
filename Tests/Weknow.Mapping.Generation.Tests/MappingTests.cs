@@ -204,19 +204,69 @@ namespace Weknow.Text.Json.Extensions.Tests
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
 
-            d["Birthday"] = new ZonedDateTime(DateTimeOffset.Now);
+            var date = new ZonedDateTime(c.Birthday);
+            d["Birthday"] = date;
+            di = di.Remove("Birthday").Add("Birthday", date);
             Sometime c1 = d;
             Sometime c2 = di;
             Sometime c3 = (Sometime)(d as dynamic);
             Sometime c4 = (Sometime)typeof(Sometime).GetMethod(nameof(IDictionaryable<Sometime>.FromDictionary))
                      .Invoke(null, new object[] { d });
 
-            //Assert.Equal(c, c1);
-            //Assert.Equal(c, c2);
-            Assert.Equal(c1, c3);
-            Assert.Equal(c1, c4);
-            Assert.Equal(typeof(string), d["Background"]?.GetType());
-            Assert.Equal(typeof(string), di["Background"]?.GetType());
+            Assert.Equal(c, c1);
+            Assert.Equal(c1, c2);
+            Assert.Equal(c2, c3);
+            Assert.Equal(c3, c4);
+        }
+
+        [Fact]
+        public void RecordJsonAttribute_Test()
+        {
+            var c = new RecordJsonAttribute { TestMe = 1, B = 2 };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordJsonAttribute c1 = d;
+            RecordJsonAttribute c2 = di;
+            RecordJsonAttribute c3 = (RecordJsonAttribute)(d as dynamic);
+            RecordJsonAttribute c4 = (RecordJsonAttribute)typeof(RecordJsonAttribute).GetMethod(nameof(IDictionaryable<RecordJsonAttribute>.FromDictionary))
+                     .Invoke(null, new object[] { d });
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
+            Assert.True(d.ContainsKey("Testing_Me"));
+            Assert.True(d.ContainsKey("B"));
+            Assert.True(di.ContainsKey("Testing_Me"));
+            Assert.True(di.ContainsKey("B"));
+        }
+
+        [Fact]
+        public void RecordJsonPropAttribute_Test()
+        {
+            var c = new RecordJsonPropAttribute("10")
+            {
+                CreatedAt = DateTimeOffset.Now,
+                ModifiedAt = DateTimeOffset.Now,
+            };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordJsonPropAttribute c1 = d;
+            RecordJsonPropAttribute c2 = di;
+            RecordJsonPropAttribute c3 = (RecordJsonPropAttribute)(d as dynamic);
+            RecordJsonPropAttribute c4 = (RecordJsonPropAttribute)typeof(RecordJsonPropAttribute).GetMethod(nameof(IDictionaryable<RecordJsonPropAttribute>.FromDictionary))
+                     .Invoke(null, new object[] { d });
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
+            Assert.True(d.ContainsKey("creation-date"));
+            Assert.True(d.ContainsKey("modification-date"));
+            Assert.True(di.ContainsKey("creation-date"));
+            Assert.True(di.ContainsKey("modification-date"));
         }
 
         [Fact]
