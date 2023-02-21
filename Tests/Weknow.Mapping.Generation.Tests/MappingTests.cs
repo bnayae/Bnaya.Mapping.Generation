@@ -1,6 +1,9 @@
 using System.Collections.Immutable;
 
+using Neo4j.Driver;
+
 using Weknow.Generation.SrcGen.Playground;
+using Weknow.Mapping;
 
 using Xunit;
 
@@ -174,9 +177,44 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             RecordEnum c1 = d;
             RecordEnum c2 = di;
+            RecordEnum c3 = (RecordEnum)(d as dynamic);
+            RecordEnum c4 = (RecordEnum)typeof(RecordEnum).GetMethod(nameof(IDictionaryable<RecordEnum>.FromDictionary))
+                     .Invoke(null, new object[] { d });
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
+            Assert.Equal(typeof(string), d["Background"]?.GetType());
+            Assert.Equal(typeof(string), di["Background"]?.GetType());
+        }
+
+        [Fact]
+        public void Sometime_Test()
+        {
+            var c = new Sometime 
+            {
+               At = TimeSpan.FromDays(1),
+               Birthday = DateTimeOffset.Now,
+               IssueDate = DateTime.Now,
+               Local = DateTimeOffset.Now,
+               Might = DateTime.Now,
+               Name = "Test",
+            };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            d["Birthday"] = new ZonedDateTime(DateTimeOffset.Now);
+            Sometime c1 = d;
+            Sometime c2 = di;
+            Sometime c3 = (Sometime)(d as dynamic);
+            Sometime c4 = (Sometime)typeof(Sometime).GetMethod(nameof(IDictionaryable<Sometime>.FromDictionary))
+                     .Invoke(null, new object[] { d });
+
+            //Assert.Equal(c, c1);
+            //Assert.Equal(c, c2);
+            Assert.Equal(c1, c3);
+            Assert.Equal(c1, c4);
             Assert.Equal(typeof(string), d["Background"]?.GetType());
             Assert.Equal(typeof(string), di["Background"]?.GetType());
         }
@@ -190,9 +228,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             RecordPascal c1 = d;
             RecordPascal c2 = di;
+            RecordPascal c3 = (RecordPascal)(d as dynamic);
+            RecordPascal c4 = (RecordPascal)typeof(RecordPascal).GetMethod(nameof(IDictionaryable<RecordPascal>.FromDictionary))
+                     .Invoke(null, new object[] { d });
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
             Assert.True(d.ContainsKey("WallOfChina"));
             Assert.True(d.ContainsKey("NothingNew"));
             Assert.True(di.ContainsKey("WallOfChina"));
@@ -208,9 +251,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             RecordCamel c1 = d;
             RecordCamel c2 = di;
+            RecordCamel c3 = (RecordCamel)(d as dynamic);
+            RecordCamel c4 = (RecordCamel)typeof(RecordCamel).GetMethod(nameof(IDictionaryable<RecordCamel>.FromDictionary))
+                     .Invoke(null, new object[] { d });
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
             Assert.True(d.ContainsKey("wallOfChina"));
             Assert.True(d.ContainsKey("nothingNew"));
             Assert.True(di.ContainsKey("wallOfChina"));
@@ -226,9 +274,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             RecordDash c1 = d;
             RecordDash c2 = di;
+            RecordDash c3 = (RecordDash)(d as dynamic);
+            RecordDash c4 = (RecordDash)typeof(RecordDash).GetMethod(nameof(IDictionaryable<RecordDash>.FromDictionary))
+                     .Invoke(null, new object[] { d });
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
             Assert.True(d.ContainsKey("wall-of-china"));
             Assert.True(d.ContainsKey("nothing-new"));
             Assert.True(di.ContainsKey("wall-of-china"));
@@ -244,9 +297,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             RecordScream c1 = d;
             RecordScream c2 = di;
+            RecordScream c3 = (RecordScream)(d as dynamic);
+            RecordScream c4 = (RecordScream)typeof(RecordScream).GetMethod(nameof(IDictionaryable<RecordScream>.FromDictionary))
+                     .Invoke(null, new object[] { d });
 
             Assert.Equal(c, c1);
             Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
             Assert.True(d.ContainsKey("WALL_OF_CHINA"));
             Assert.True(d.ContainsKey("NOTHING_NEW"));
             Assert.True(di.ContainsKey("WALL_OF_CHINA"));

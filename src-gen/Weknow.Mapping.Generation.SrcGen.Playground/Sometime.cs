@@ -3,7 +3,7 @@
 namespace Weknow.Generation.SrcGen.Playground;
 
 [Dictionaryable(Flavor = Mapping.Flavor.Neo4j)]
-internal partial record Sometime
+public partial record Sometime
 {
     public required string Name { get; init; }
     public required DateTimeOffset Birthday { get; init; }
