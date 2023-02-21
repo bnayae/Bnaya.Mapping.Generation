@@ -363,25 +363,28 @@ using Weknow.Mapping;{additionalUsing}
         string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
+        string defaultValue1 = defaultValue ?? (isNullable ? $"default({displayType})" : $"null /* default({displayType}) */");
         string name = p.Name;
 
-        return GetterFn(getterFnExists, name, defaultValue);
+        return GetterFn(getterFnExists, name, defaultValue1);
     }
+
     private static string GetterFn(
                     ConcurrentDictionary<string, object?> getterFnExists,
                     IPropertySymbol p)
     {
         string displayType = p.Type.ToDisplayString();
         bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string? defaultValue = isNullable ? $"default({displayType})" : null;
+        string defaultValue = isNullable ? $"default({displayType})" : $"null /* default({displayType}) */";
         string name = p.Name;
 
         return GetterFn(getterFnExists, name, defaultValue);
     }
 
 
-    private static string GetterFn(ConcurrentDictionary<string, object?> getterFnExists, string name, string? defaultValue)
+    private static string GetterFn(
+        ConcurrentDictionary<string, object?> getterFnExists,
+        string name, string defaultValue)
     {
         if (!getterFnExists.TryAdd(name, null))
             return string.Empty;
@@ -399,11 +402,11 @@ using Weknow.Mapping;{additionalUsing}
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}\tif(TryGetValueOf_{name}(tryGet, out var value))");
         sb.AppendLine($"{indent}\t\treturn value;");
-        sb.AppendLine($"{indent}\treturn default;");
+        sb.AppendLine($"{indent}\treturn {defaultValue};");
         sb.AppendLine($"{indent}}}");
         sb.AppendLine($"{indent}private static bool TryGetValueOf_{name}(TryGetValue tryGet, out object? value)");
         sb.AppendLine($"{indent}{{");
-        sb.AppendLine($"{indent}\tvalue = {defaultValue ?? "null"};");
+        sb.AppendLine($"{indent}\tvalue = {defaultValue};");
         foreach (var kv in set.OrderBy(m => m.Value))
         {
             string k = kv.Key;
@@ -513,7 +516,7 @@ using Weknow.Mapping;{additionalUsing}
             if (defaultValue == string.Empty)
                 defaultValue = "string.Empty";
             if (defaultValue == null)
-                defaultValue = "null";
+                defaultValue = $"null /* default({displayType}) */";
             return @$"{tryGetter}
                             ? ({displayType})__{name}__
                             : {defaultValue}";
