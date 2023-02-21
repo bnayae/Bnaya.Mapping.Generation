@@ -10,4 +10,5 @@ internal partial record Sometime
     public required DateTimeOffset Local { get; init; }
     public required DateTime IssueDate { get; init; }
     public required TimeSpan At { get; init; }
+    public DateTime? Might { get; init; }
 }

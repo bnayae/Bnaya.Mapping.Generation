@@ -1,6 +1,8 @@
-﻿using System.CodeDom.Compiler;
+﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -350,23 +352,24 @@ using Weknow.Mapping;{additionalUsing}
         foreach (var item in props)
         {
             string gen = GetterFn(getterFnExists, item);
-            if(!string.IsNullOrEmpty(gen))
+            if (!string.IsNullOrEmpty(gen))
                 sb.AppendLine(gen);
         }
         return sb.ToString();
     }
 
     private static string GetterFn(
-                    ConcurrentDictionary<string, object?> getterFnExists, 
+                    ConcurrentDictionary<string, object?> getterFnExists,
                     IParameterSymbol p)
     {
         string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string defaultValue1 = defaultValue ?? (isNullable ? $"default({displayType})" : $"null /* default({displayType}) */");
+        bool isEnum = p.Type.IsEnum();
+        //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        string defaultValue1 = defaultValue ?? $"default({displayType})";
         string name = p.Name;
 
-        return GetterFn(getterFnExists, name, defaultValue1);
+        return GetterFn(getterFnExists, name, defaultValue1, isEnum, displayType);
     }
 
     private static string GetterFn(
@@ -374,17 +377,18 @@ using Weknow.Mapping;{additionalUsing}
                     IPropertySymbol p)
     {
         string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string defaultValue = isNullable ? $"default({displayType})" : $"null /* default({displayType}) */";
+        //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        string defaultValue = $"default({displayType})";
+        bool isEnum = p.Type.IsEnum();
         string name = p.Name;
 
-        return GetterFn(getterFnExists, name, defaultValue);
+        return GetterFn(getterFnExists, name, defaultValue, isEnum, displayType);
     }
 
 
     private static string GetterFn(
         ConcurrentDictionary<string, object?> getterFnExists,
-        string name, string defaultValue)
+        string name, string defaultValue, bool isEnum, string displayType)
     {
         if (!getterFnExists.TryAdd(name, null))
             return string.Empty;
@@ -407,11 +411,20 @@ using Weknow.Mapping;{additionalUsing}
         sb.AppendLine($"{indent}private static bool TryGetValueOf_{name}(TryGetValue tryGet, out object? value)");
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}\tvalue = {defaultValue};");
+        if (isEnum)
+            sb.AppendLine($"{indent}\t{displayType} e = {defaultValue};");
         foreach (var kv in set.OrderBy(m => m.Value))
         {
             string k = kv.Key;
             sb.AppendLine($@"{indent}    if(tryGet(""{k}"", out value))");
+            sb.AppendLine($@"{indent}    {{");
+            if (isEnum)
+            {
+                sb.AppendLine($@"{indent}        Enum.TryParse<{displayType}>((string)(value), true, out e);");
+                sb.AppendLine($@"{indent}        value = e;");
+            }        
             sb.AppendLine($@"{indent}        return true;");
+            sb.AppendLine($@"{indent}    }}");
         }
         sb.AppendLine($"{indent}\treturn false;");
         sb.AppendLine($"{indent}}}");
@@ -439,7 +452,7 @@ using Weknow.Mapping;{additionalUsing}
         string tryGetter = $"TryGetValueOf_{name}(@source.TryGetValue, out var __{name}__)";
         string convert = @$"{getter}.As<{displayType}>()";
         if (isEnum)
-        { 
+        {
             convert = $"Enum.TryParse<{displayType}>((string)({getter}), true, out var {name}Enum) ? {name}Enum : {convert}";
         }
         else if (displayType == "System.TimeSpan")
@@ -451,7 +464,7 @@ using Weknow.Mapping;{additionalUsing}
             return convert;
         }
 
-        if(defaultValue == string.Empty)
+        if (defaultValue == string.Empty)
             defaultValue = "string.Empty";
         return @$"{tryGetter} 
                         ? __{name}__.As<{displayType}>()
@@ -542,10 +555,10 @@ using Weknow.Mapping;{additionalUsing}
     {
         string? defaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        defaultValue = defaultValue ?? (isNullable ? $"default({displayType})" : null);
+        //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        defaultValue = defaultValue ?? $"default({displayType})";
         bool isEnum = p.Type.IsEnum();
-        string name = p.Name; 
+        string name = p.Name;
 
         string result = FormatSymbol(compatibility, displayType, name, defaultValue, isEnum);
         return result;
@@ -558,8 +571,8 @@ using Weknow.Mapping;{additionalUsing}
     private static string FormatProperty(string compatibility, IPropertySymbol p)
     {
         string displayType = p.Type.ToDisplayString();
-        bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string? defaultValue = isNullable ? $"default({displayType})" : null;
+        //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
+        string? defaultValue = $"default({displayType})";
         bool isEnum = p.Type.IsEnum();
 
         string name = p.Name;
