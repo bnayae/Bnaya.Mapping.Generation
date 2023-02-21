@@ -103,7 +103,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Record5_Test()
         {
-            var c = new Record5 { A = 1, B = 2 };
+            var c = new Record5 { TestMe = 1, B = 2 };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Record5 c1 = d;
@@ -116,7 +116,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Record5_Null_Test()
         {
-            var c = new Record5 { A = 1 };
+            var c = new Record5 { TestMe = 1 };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
             Record5 c1 = d;
