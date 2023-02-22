@@ -458,11 +458,7 @@ using Weknow.Mapping;{additionalUsing}
         string getter = $"GetValueOf_{name}(@source.TryGetValue)";
         string tryGetter = $"TryGetValueOf_{name}(@source.TryGetValue, out var __{name}__)";
         string convert = @$"{getter}.As<{displayType}>()";
-        if (isEnum)
-        {
-            convert = $"Enum.TryParse<{displayType}>((string)({getter}), true, out var {name}Enum) ? {name}Enum : {convert}";
-        }
-        else if (displayType == "System.TimeSpan")
+        if (displayType == "System.TimeSpan")
         {
             convert = $"{getter}?.GetType() == typeof(Neo4j.Driver.LocalTime) ? {convert} : ConvertToTimeSpan({getter}.As<Neo4j.Driver.OffsetTime>())";
         }
@@ -473,8 +469,15 @@ using Weknow.Mapping;{additionalUsing}
 
         if (defaultValue == string.Empty)
             defaultValue = "string.Empty";
+
+        convert = $"__{name}__.As<{displayType}>()";
+        if (displayType == "System.TimeSpan")
+        {
+            convert = $"__{name}__?.GetType() == typeof(Neo4j.Driver.LocalTime) ? {convert} : ConvertToTimeSpan(__{name}__.As<Neo4j.Driver.OffsetTime>())";
+        }
+
         return @$"{tryGetter} 
-                        ? __{name}__.As<{displayType}>()
+                        ? {convert}
                         : {defaultValue}";
     }
 

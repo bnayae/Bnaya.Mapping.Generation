@@ -194,8 +194,8 @@ namespace Weknow.Text.Json.Extensions.Tests
         {
             var c = new Sometime 
             {
-               At = TimeSpan.FromDays(1),
-               Birthday = DateTimeOffset.Now,
+               At = new TimeSpan(23, 0, 12), // OffsetTime cannot represent a day+
+                Birthday = DateTimeOffset.Now,
                IssueDate = DateTime.Now,
                Local = DateTimeOffset.Now,
                Might = DateTime.Now,
@@ -205,7 +205,10 @@ namespace Weknow.Text.Json.Extensions.Tests
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
 
             var date = new ZonedDateTime(c.Birthday);
+            var at = new OffsetTime((int)c.At.TotalHours, c.At.Minutes, c.At.Seconds, 0);
+            d["At"] = at;
             d["Birthday"] = date;
+            di = di.Remove("At").Add("At", at);
             di = di.Remove("Birthday").Add("Birthday", date);
             Sometime c1 = d;
             Sometime c2 = di;
