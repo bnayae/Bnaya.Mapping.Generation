@@ -1,0 +1,12 @@
+﻿using Weknow.Mapping;
+
+namespace Weknow.Generation.SrcGen.Playground
+{
+    [Dictionaryable]
+    public partial record struct RecordHierarchic
+    {
+        public int Id { get; init; }
+        public string[] SimpleArray { get; init; }
+        public Record4[] ComplexArray { get; init; }
+    }
+}
