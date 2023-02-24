@@ -7,6 +7,24 @@ namespace Weknow.Mapping;
 public static class HelperExtensions
 {
     public static bool IsEnum(this ITypeSymbol type) => type.BaseType?.Name == "Enum";
+    public static bool IsNullable(this ITypeSymbol symbol) => symbol.NullableAnnotation == NullableAnnotation.Annotated;
+    public static bool IsNullable(this IPropertySymbol symbol) => symbol.NullableAnnotation == NullableAnnotation.Annotated;
+
+    public static bool IsIEnumerable(this IPropertySymbol p)
+    {
+        return p.Type.Interfaces.Any(m => m.Name == "IEnumerable");
+    }
+
+    public static bool IsICollection(this IPropertySymbol p)
+    {
+        return p.Type.Interfaces.Any(m => m.Name == "ICollection");
+    }
+
+    public static bool IsIList(this IPropertySymbol p)
+    {
+        return p.Type.Interfaces.Any(m => m.Name == "IList<>");
+    }
+
     public static string ToPropNameConvention(this IPropertySymbol? p, string propConvention)
     { 
         string name = p?.Name?? throw new ArgumentNullException(nameof(IPropertySymbol));

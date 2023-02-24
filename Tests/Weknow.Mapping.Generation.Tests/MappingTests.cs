@@ -363,5 +363,37 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(di.ContainsKey("WALL_OF_CHINA"));
             Assert.True(di.ContainsKey("NOTHING_NEW"));
         }
+
+        [Fact]
+        public void RecordHierarchic_Test()
+        {
+            var c = new RecordHierarchic
+            {
+                Id = 10, 
+                SimpleArray = new[] { "X", "Y" },
+                ComplexArray= new[] 
+                                {
+                                    new Record4 {A = 0, B = 10 },
+                                    new Record4 {A = 1, B = 11 },
+                                }
+             };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordHierarchic c1 = d;
+            RecordHierarchic c2 = di;
+            RecordHierarchic c3 = (RecordHierarchic)(d as dynamic);
+            RecordHierarchic c4 = (RecordHierarchic)typeof(RecordHierarchic).GetMethod(nameof(IDictionaryable<RecordHierarchic>.FromDictionary))
+                     .Invoke(null, new object[] { d });
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
+            Assert.True(d.ContainsKey("WALL_OF_CHINA"));
+            Assert.True(d.ContainsKey("NOTHING_NEW"));
+            Assert.True(di.ContainsKey("WALL_OF_CHINA"));
+            Assert.True(di.ContainsKey("NOTHING_NEW"));
+        }
     }
 }
