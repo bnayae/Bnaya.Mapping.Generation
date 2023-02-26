@@ -31,9 +31,12 @@ public static class HelperExtensions
         return p.Type.AllInterfaces.Any(m => IS_LIST.IsMatch(m.Name));
     }
 
-    public static string[] GetGenericsArguments(this ITypeSymbol type)
+    public static string GetCollectionType(this ITypeSymbol type)
     {
-        var args =  type.ToDisplayParts(SymbolDisplayFormat.MinimallyQualifiedFormat)
+        if (type is IArrayTypeSymbol arr)
+            return arr.ElementType.Name;
+        var parts = type.ToDisplayParts(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        var args = parts
                         .SkipWhile(m => m.Kind != SymbolDisplayPartKind.Punctuation && m.Symbol?.Name != "<")
                         .Skip(1)
                         .TakeWhile(m => m.Kind != SymbolDisplayPartKind.Punctuation ||
@@ -53,7 +56,15 @@ public static class HelperExtensions
                             }
                             return acc;
                         }).ToArray();
-        return args;
+        var result = args?.Length switch
+        {
+            1 => args[0],
+            2 => $"KeyValuePair.Create({args[0]}, {args[1]})",
+            null => throw new NotSupportedException($"Cannot fetch the argument of [{type.Name}]"),
+            0 => throw new NotSupportedException($"Cannot fetch the argument of [{type.Name}]"),
+            _ => $"({ string.Join(", ", args)})"
+        }; 
+        return result;
     }
 
     public static string ToPropNameConvention(this IPropertySymbol? p, string propConvention)

@@ -183,7 +183,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
                                             .Where(m => m != null && m.Name != "EqualityContract"))
                             .ToArray());
         var publicProps = props.Where(m => m.DeclaredAccessibility == Accessibility.Public && m.SetMethod != null).ToArray();
-        ImmutableArray <IParameterSymbol> parameters = symbol.Constructors
+        ImmutableArray<IParameterSymbol> parameters = symbol.Constructors
             .Where(m => !(m.Parameters.Length == 1 && m.Parameters[0].Type.Name == cls))
             .Aggregate((acc, c) =>
             {
@@ -357,8 +357,8 @@ using Weknow.Mapping;{additionalUsing}
     #region CastProperty(IPropertySymbol p)
 
     private static string CastProperty(
-        StringBuilder builder, 
-        string compatibility, 
+        StringBuilder builder,
+        string compatibility,
         IPropertySymbol p)
     {
         ITypeSymbol type = p.Type;
@@ -371,29 +371,13 @@ using Weknow.Mapping;{additionalUsing}
         string indent = "\t";
         string indent1 = "\t\t";
         string indent2 = "\t\t\t";
+        string indent3 = "\t\t\t\t";
         string displayType = p.Type.ToDisplayString();
-        string? defaultValue = $"default({displayType})";
+        string? defaultValue = $"default /* ({displayType}) */";
 
         if (isEnumerable)
         {
-            // COLLECTION ITEM
-
-            var args = type.GetGenericsArguments();
-            #region Validation
-
-            if (args.Length != 1)
-            {
-                builder.AppendLine($"{indent}private static {displayType} Cast_{name}(TryGetValue tryGet)");
-                builder.AppendLine($"{indent}{{");
-                builder.AppendLine($"// [{type.Name}] Generics collection of more than single argument are not supported yet!");
-                builder.AppendLine($"throw new NotSupportedException(\"[{type.Name}] Generics collection of more than single argument are\");");
-                builder.AppendLine($"{indent}}}");
-                return builder.ToString();
-            }
-
-            #endregion // Validation
-            string displayItemType = args.First();
-
+            var itemType = type.GetCollectionType();
             // COLLECTION
 
             builder.AppendLine($"{indent}#region Cast_{name}");
@@ -403,26 +387,35 @@ using Weknow.Mapping;{additionalUsing}
             builder.AppendLine($"{indent1}if (TryGetValueOf_{name}(tryGet, out var val))");
             builder.AppendLine($"{indent1}{{");
 
-            builder.AppendLine($"{indent2}var items = val as List<object?>;");
-            builder.AppendLine($"{indent2}IEnumerable<{displayType}> candidate = items");
+            builder.AppendLine($"{indent2}var items = (List<object?>)val;");
+            builder.AppendLine($"{indent2}IEnumerable<{itemType}> candidate = items");
             builder.AppendLine($"{indent2}\t\t\t.Where(m => m != null)");
-            builder.AppendLine($"{indent2}\t\t\t.Select(Cast_{name}_Single);");
+            builder.AppendLine($"{indent2}\t\t\t.Select(Cast_{name}_Item);");
             if (isArray)
                 builder.AppendLine($"{indent2}return candidate.ToArray();");
             else if (isList)
                 builder.AppendLine($"{indent2}return candidate.ToList();");
+            else if (type.Name == "IEnumerable")
+            {
+                builder.AppendLine($"{indent2}foreach (var x in candidate)");
+                builder.AppendLine($"{indent2}{{");
+                builder.AppendLine($"{indent3}yield return x;");
+                builder.AppendLine($"{indent2}}}");
+            }
             else
-                builder.AppendLine($"{indent2}return candidate;");
+                builder.AppendLine($"{indent2}return new {displayType}(candidate);");
 
             builder.AppendLine($"{indent1}}}");
             builder.AppendLine($"{indent1}else");
             builder.AppendLine($"{indent1}{{");
             if (isArray)
-                builder.AppendLine($"{indent2}value = Array.Empty<{displayType}>();");
+                builder.AppendLine($"{indent2}return Array.Empty<{itemType}>();");
             else if (isList)
-                builder.AppendLine($"{indent2}value = default({displayType});");
-            else 
-                builder.AppendLine($"{indent2}return default({displayType});");
+                builder.AppendLine($"{indent2}return new List<{itemType}>();");
+            else if (type.Name == "IEnumerable")
+                builder.AppendLine($"{indent2}yield break;");
+            else
+                builder.AppendLine($"{indent2}return new {displayType}();");
             builder.AppendLine($"{indent1}}}");
 
             builder.AppendLine($"{indent}}}");
@@ -431,20 +424,38 @@ using Weknow.Mapping;{additionalUsing}
             builder.AppendLine();
 
 
-            builder.AppendLine($"{indent}#region Cast_{name}_Single");
+            // COLLECTION ITEM
+
+            builder.AppendLine($"{indent}#region Cast_{name}_Item");
             builder.AppendLine();
 
-            builder.AppendLine($"{indent}private static {displayItemType} Cast_{name}_Single(TryGetValue tryGet)");
+            builder.AppendLine($"{indent}private static {itemType} Cast_{name}_Item(object? item)");
             builder.AppendLine($"{indent}{{");
             builder.AppendLine($"{indent1}// if (m is IDictionary<string, object?> d)");
             builder.AppendLine($"{indent1}// {{");
-            builder.AppendLine($"{indent2}// var val = {displayItemType}.FromDictionary(d);");
+            builder.AppendLine($"{indent2}// var val = {itemType}.FromDictionary(d);");
             builder.AppendLine($"{indent2}// return val;");
             builder.AppendLine($"{indent1}// }}");
-            FormatSymbol(builder, compatibility, displayItemType, name, defaultValue, indent1);
+            switch (itemType)
+            {
+                case "Neo4j":
+                    FormatSymbolNeo4JResult(builder, itemType, "item", indent1);
+                    break;
+                default:
+                    string? convertTo = ConvertTo(itemType);
+                    if (convertTo == null)
+                    {
+                        builder.AppendLine($"{indent1}return ({itemType})item;");
+                    }
+                    else
+                    {
+                        builder.AppendLine(@$"{indent1}return Convert.{convertTo}(item);"); 
+                    }
+                    break;
+            }
             builder.AppendLine($"{indent}}}");
             builder.AppendLine();
-            builder.AppendLine($"{indent}#endregion // Cast_{name}_Single");
+            builder.AppendLine($"{indent}#endregion // Cast_{name}_Item");
         }
         else
         {
@@ -458,6 +469,7 @@ using Weknow.Mapping;{additionalUsing}
             builder.AppendLine($"{indent2}// var val = {displayType}.FromDictionary(d);");
             builder.AppendLine($"{indent2}// return val;");
             builder.AppendLine($"{indent1}// }}");
+
             FormatSymbol(builder, compatibility, displayType, name, defaultValue, indent1);
             builder.AppendLine($"{indent}}}");
             builder.AppendLine();
@@ -520,7 +532,7 @@ using Weknow.Mapping;{additionalUsing}
         string displayType = p.Type.ToDisplayString();
         bool isEnum = p.Type.IsEnum();
         //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string defaultValue1 = defaultValue ?? $"default({displayType})";
+        string defaultValue1 = defaultValue ?? $"default /* ({displayType}) */";
         string name = p.Name;
         return GetterFn(getterFnExists, name, defaultValue1, isEnum, displayType);
     }
@@ -531,7 +543,7 @@ using Weknow.Mapping;{additionalUsing}
     {
         string displayType = p.Type.ToDisplayString();
         //bool isNullable = p.NullableAnnotation == NullableAnnotation.Annotated;
-        string defaultValue = $"default({displayType})";
+        string defaultValue = $"default /* ({displayType}) */";
         bool isEnum = p.Type.IsEnum();
         string name = p.Name;
         TryGetJsonProperty(p, out string jsonName);
@@ -597,10 +609,10 @@ using Weknow.Mapping;{additionalUsing}
     #region FormatSymbol
 
     private static void FormatSymbol(
-                            StringBuilder builder, 
-                            string compatibility, 
-                            string displayType, 
-                            string name, 
+                            StringBuilder builder,
+                            string compatibility,
+                            string displayType,
+                            string name,
                             string? defaultValue,
                             string indent)
     {
@@ -611,124 +623,82 @@ using Weknow.Mapping;{additionalUsing}
     }
 
     private static void FormatSymbolNeo4j(
-                            StringBuilder builder, 
-                            string displayType, 
+                            StringBuilder builder,
+                            string displayType,
                             string name,
-                            string? defaultValue, 
+                            string? defaultValue,
                             string indent)
     {
         string indent1 = $"{indent}\t";
         string indent2 = $"{indent1}\t";
 
-        builder.AppendLine($"{indent}{displayType} result;");
+        //builder.AppendLine($"{indent}{displayType} result;");
         if (defaultValue == null)
         {
             builder.AppendLine($"{indent}var __{name}__ = GetValueOf_{name}(tryGet);");
-            FormatSymbolNeo4JResult(builder, displayType, name, indent, indent1);
+            FormatSymbolNeo4JResult(builder, displayType, $"__{name}__", indent);
         }
         else
         {
             builder.AppendLine($"{indent}if(TryGetValueOf_{name}(tryGet, out var __{name}__))");
             builder.AppendLine($"{indent}{{");
-            FormatSymbolNeo4JResult(builder, displayType, name, indent1, indent2);
+            FormatSymbolNeo4JResult(builder, displayType, $"__{name}__", indent1);
             builder.AppendLine($"{indent}}}");
             builder.AppendLine($"{indent}return {defaultValue};");
         }
     }
 
-    private static void FormatSymbolNeo4JResult(StringBuilder builder, string displayType, string name, string indent, string indent1)
+    private static void FormatSymbolNeo4JResult(
+        StringBuilder builder, 
+        string displayType,
+        string propName, 
+        string indent )
     {
+        string indent1 = $"{indent}\t";
         if (displayType == "System.TimeSpan")
         {
-            builder.AppendLine($"{indent}if(__{name}__?.GetType() == typeof(Neo4j.Driver.LocalTime))");
-            builder.AppendLine($"{indent1}return __{name}__.As<{displayType}>();");
+            builder.AppendLine($"{indent}if({propName}?.GetType() == typeof(Neo4j.Driver.LocalTime))");
+            builder.AppendLine($"{indent1}return {propName}.As<{displayType}>();");
             builder.AppendLine($"{indent}else");
-            builder.AppendLine($"{indent1}return ConvertToTimeSpan(__{name}__.As<Neo4j.Driver.OffsetTime>()).As<{displayType}>();");
+            builder.AppendLine($"{indent1}return ConvertToTimeSpan({propName}.As<Neo4j.Driver.OffsetTime>()).As<{displayType}>();");
         }
         else
         {
-            builder.AppendLine(@$"{indent}return __{name}__.As<{displayType}>();");
+            builder.AppendLine(@$"{indent}return {propName}.As<{displayType}>();");
         }
     }
 
     private static void FormatSymbolDefault(
-                            StringBuilder builder, 
+                            StringBuilder builder,
                             string displayType,
                             string name,
-                            string? defaultValue, 
+                            string? defaultValue,
                             string indent)
     {
-        #region string? convertTo = displayType switch {...}
-
-        string? convertTo = displayType switch
-        {
-            "float" => "ToSingle",
-            "float?" => "ToSingle",
-
-            "double" => "ToDouble",
-            "double?" => "ToDouble",
-
-            "ushort" => "ToUInt16",
-            "ushort?" => "ToUInt16",
-
-            "short" => "ToUInt16",
-            "short?" => "ToUInt16",
-
-            "int" => "ToInt32",
-            "int?" => "ToInt32",
-
-            "uint" => "ToUInt32",
-            "uint?" => "ToUInt32",
-
-            "ulong" => "ToUInt64",
-            "ulong?" => "ToUInt64",
-
-            "long" => "ToInt64",
-            "long?" => "ToInt64",
-
-            "sbyte" => "ToSByte",
-            "sbyte?" => "ToSByte",
-
-            "bool" => "ToBoolean",
-            "bool?" => "ToBoolean",
-
-            "DateTime" => "ToDateTime",
-            "DateTime?" => "ToDateTime",
-
-            "char" => "ToChar",
-            "char?" => "ToChar",
-
-            "byte" => "ToByte",
-            "byte?" => "ToByte",
-
-            _ => null
-        };
-
-        #endregion // string? convertTo = displayType switch {...}
-
-        string indent1 = $"{indent}\t";
+        string? convertTo = ConvertTo(displayType);
 
         if (defaultValue == string.Empty)
             defaultValue = "string.Empty";
         if (defaultValue == null)
             defaultValue = $"null /* default({displayType}) */";
 
+        string indent1 = $"{indent}\t";
 
         if (defaultValue == null)
         {
-            builder.AppendLine($"{indent}var __{name}__ = GetValueOf_{name}(tryGet);");
+            builder.AppendLine($"{indent}var __{name}__ = GetValueOf___{name}__(tryGet);");
             if (convertTo == null)
             {
                 builder.AppendLine($"{indent}return ({displayType})__{name}__;");
             }
             else
-            { 
+            {
                 builder.AppendLine(@$"{indent}return Convert.{convertTo}(__{name}__)"); ;
             }
         }
         else
         {
-            builder.AppendLine($"{indent}if(TryGetValueOf_{name}(tryGet, out var __{name}__))");
+            builder.AppendLine($"{indent}if(TryGetValueOf___{name}__(tryGet, out var __{name}__))");
             builder.AppendLine($"{indent}{{");
             if (convertTo == null)
             {
@@ -744,6 +714,85 @@ using Weknow.Mapping;{additionalUsing}
     }
 
     #endregion // FormatSymbol
+
+    #region ConvertTo
+
+    private static string? ConvertTo(string displayType)
+    {
+        #region string? convertTo = displayType switch {...}
+
+        return displayType switch
+        {
+            "float" => nameof(Convert.ToSingle),
+            "float?" => nameof(Convert.ToSingle),
+            nameof(Single) => nameof(Convert.ToSingle),
+            $"{nameof(Single)}?" => nameof(Convert.ToSingle),
+
+            "double" => nameof(Convert.ToDouble),
+            "double?" => nameof(Convert.ToDouble),
+            nameof(Double) => nameof(Convert.ToDouble),
+            $"{nameof(Double)}?" => nameof(Convert.ToDouble),
+
+            "ushort" => nameof(Convert.ToUInt16),
+            "ushort?" => nameof(Convert.ToUInt16),
+            nameof(UInt16) => nameof(Convert.ToUInt16),
+            $"{nameof(UInt16)}?" => nameof(Convert.ToUInt16),
+
+            "short" => nameof(Convert.ToInt16),
+            "short?" => nameof(Convert.ToInt16),
+            nameof(Int16) => nameof(Convert.ToInt16),
+            $"{nameof(Int16)}?" => nameof(Convert.ToInt16),
+
+            "int" => nameof(Convert.ToInt32),
+            "int?" => nameof(Convert.ToInt32),
+            nameof(Int32) => nameof(Convert.ToInt32),
+            $"{nameof(Int32)}?" => nameof(Convert.ToInt32),
+
+            "uint" => nameof(Convert.ToUInt32),
+            "uint?" => nameof(Convert.ToUInt32),
+            nameof(UInt32) => nameof(Convert.ToUInt32),
+            $"{nameof(UInt32)}?" => nameof(Convert.ToUInt32),
+
+            "ulong" => nameof(Convert.ToUInt64),
+            "ulong?" => nameof(Convert.ToUInt64),
+            nameof(UInt64) => nameof(Convert.ToUInt64),
+            $"{nameof(UInt64)}?" => nameof(Convert.ToUInt64),
+
+            "long" => nameof(Convert.ToInt64),
+            "long?" => nameof(Convert.ToInt64),
+            nameof(Int64) => nameof(Convert.ToInt64),
+            $"{nameof(Int64)}?" => nameof(Convert.ToInt64),
+
+            "sbyte" => nameof(Convert.ToSByte),
+            "sbyte?" => nameof(Convert.ToSByte),
+            nameof(SByte) => nameof(Convert.ToSByte),
+            $"{nameof(SByte)}?" => nameof(Convert.ToSByte),
+
+            "bool" => nameof(Convert.ToBoolean),
+            "bool?" => nameof(Convert.ToBoolean),
+            nameof(Boolean) => nameof(Convert.ToBoolean),
+            $"{nameof(Boolean)}?" => nameof(Convert.ToBoolean),
+
+            "DateTime" => nameof(Convert.ToDateTime),
+            "DateTime?" => nameof(Convert.ToDateTime),
+
+            "char" => nameof(Convert.ToChar),
+            "char?" => nameof(Convert.ToChar),
+            nameof(Char) => nameof(Convert.ToChar),
+            $"{nameof(Char)}?" => nameof(Convert.ToChar),
+
+            "byte" => nameof(Convert.ToByte),
+            "byte?" => nameof(Convert.ToByte),
+            nameof(Byte) => nameof(Convert.ToByte),
+            $"{nameof(Byte)}?" => nameof(Convert.ToByte),
+
+            _ => null
+        };
+
+        #endregion // string? convertTo = displayType switch {...}
+    }
+
+    #endregion // ConvertTo
 
     #region ToGenerationInput
 
