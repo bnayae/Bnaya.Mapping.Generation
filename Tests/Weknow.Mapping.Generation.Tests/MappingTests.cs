@@ -136,7 +136,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             IReadOnlyDictionary<string, object?> d = c.ToDictionary()
                                                                .ToDictionary(
                                                                     m => m.Key,
-                                                                    m => m.Value );
+                                                                    m => m.Value);
             Struct5 c1 = Struct5.FromReadOnlyDictionary(d);
 
             Assert.Equal(c, c1);
@@ -192,14 +192,14 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Sometime_Test()
         {
-            var c = new Sometime 
+            var c = new Sometime
             {
-               At = new TimeSpan(23, 0, 12), // OffsetTime cannot represent a day+
+                At = new TimeSpan(23, 0, 12), // OffsetTime cannot represent a day+
                 Birthday = DateTimeOffset.Now,
-               IssueDate = DateTime.Now,
-               Local = DateTimeOffset.Now,
-               Might = DateTime.Now,
-               Name = "Test",
+                IssueDate = DateTime.Now,
+                Local = DateTimeOffset.Now,
+                Might = DateTime.Now,
+                Name = "Test",
             };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
@@ -362,6 +362,122 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(d.ContainsKey("NOTHING_NEW"));
             Assert.True(di.ContainsKey("WALL_OF_CHINA"));
             Assert.True(di.ContainsKey("NOTHING_NEW"));
+        }
+
+        [Fact]
+        public void RecordCollection_Test()
+        {
+            var c = new RecordCollection(new[] { 1, 2, 3 })
+            {
+                Id = "10",
+                Tags = new[] { "X", "Y" },
+                Children = new List<RecordCollection?>(new[]
+                                {
+                                    new RecordCollection (new [] { 11, 12, 13}) 
+                                    {
+                                        Id = "12", 
+                                        Tags = new [] { "A", "B"}, 
+                                        Children = new List<RecordCollection?>(),
+                                        Parent = new RecordCollection (new [] { 22, 22, 23})
+                                        {
+                                            Id = "20", 
+                                            Tags = new [] { "A`", "B`"},
+                                            Children = new List<RecordCollection?>()
+                                        }
+                                    },
+                                }),
+                Parent = new RecordCollection(new[] { 22, 22, 23 })
+                {
+                    Id = "27",
+                    Tags = new[] { "c`", "g`" },
+                    Children = new List<RecordCollection?>()
+                }
+            };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordCollection c1 = d;
+            RecordCollection c2 = di;
+
+            Assert.Equal(c.Id, c1.Id);
+            Assert.True(c.Tags.SequenceEqual(c1.Tags));
+            Assert.True(c.ids.SequenceEqual(c1.ids));
+            Assert.True(c.Children[0].Tags.SequenceEqual(c1.Children[0].Tags));
+            Assert.Equal(c.Id, c2.Id);
+            Assert.True(c.Tags.SequenceEqual(c2.Tags));
+            Assert.True(c.ids.SequenceEqual(c2.ids));
+            Assert.True(c.Children[0].Tags.SequenceEqual(c2.Children[0].Tags));
+            Assert.True(c.Parent.Tags.SequenceEqual(c2.Parent.Tags));
+        }
+
+        [Fact]
+        public void RecordCollection_Dictionaryable_Test()
+        {
+            var c = new RecordCollection(new[] { 1, 2, 3 })
+            {
+                Id = "10",
+                Tags = new[] { "X", "Y" },
+                Children = new List<RecordCollection?>(new[]
+                                {
+                                    new RecordCollection (new [] { 11, 12, 13})
+                                    {
+                                        Id = "12",
+                                        Tags = new [] { "A", "B"},
+                                        Children = new List<RecordCollection?>()
+                                    },
+                                }),
+            };
+
+            var d = new Dictionary<string, object?>
+            {
+                ["ids"] = new[] { 1, 2, 3 },
+                ["Id"] = "10",
+                ["Tags"] = new[] { "X", "Y" },
+                ["Children"] = new object[]
+                                {
+                                    new Dictionary<string, object>
+                                    {
+                                        ["ids"] = new [] { 11, 12, 13},
+                                        ["Id"] = "12",
+                                        ["Tags"] = new [] { "A", "B"}
+                                    }
+                                 }
+            };
+
+            RecordCollection c1 = d;
+
+            Assert.Equal(c.Id, c1.Id);
+            Assert.True(c.Tags.SequenceEqual(c1.Tags));
+            Assert.True(c.ids.SequenceEqual(c1.ids));
+            Assert.True(c.Children[0].Tags.SequenceEqual(c1.Children[0].Tags));
+        }
+
+        [Fact]
+        public void RecordHierarchic_Test()
+        {
+            var c = new RecordHierarchic
+            {
+                Id = 10,
+                SimpleArray = new[] { "X", "Y" },
+                ComplexArray = new[]
+                                {
+                                    new Record4 {A = 0, B = 10 },
+                                    new Record4 {A = 1, B = 11 },
+                                }
+            };
+            Dictionary<string, object?> d = c.ToDictionary();
+            ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();
+
+            RecordHierarchic c1 = d;
+            RecordHierarchic c2 = di;
+            RecordHierarchic c3 = (RecordHierarchic)(d as dynamic);
+            RecordHierarchic c4 = (RecordHierarchic)typeof(RecordHierarchic).GetMethod(nameof(IDictionaryable<RecordHierarchic>.FromDictionary))
+                     .Invoke(null, new object[] { d });
+
+            Assert.Equal(c, c1);
+            Assert.Equal(c, c2);
+            Assert.Equal(c, c3);
+            Assert.Equal(c, c4);
         }
     }
 }
