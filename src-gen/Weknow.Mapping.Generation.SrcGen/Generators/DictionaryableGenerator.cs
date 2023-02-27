@@ -369,6 +369,7 @@ using Weknow.Mapping;{additionalUsing}
         string indent2 = "\t\t\t";
         string indent3 = "\t\t\t\t";
         string displayType = type.ToDisplayString();
+        string typeOfDisplay = displayType.EndsWith("?") ? displayType.Substring(0, displayType.Length - 1) : displayType;
         string? defaultValue = $"default /* ({displayType}) */";
 
         if (isEnumerable)
@@ -388,8 +389,10 @@ using Weknow.Mapping;{additionalUsing}
 
             if (type.Name != "IEnumerable")
             {
-                builder.AppendLine($"{indent2}if(val is {displayType} same)");
+                builder.AppendLine($"{indent2}if(val is {typeOfDisplay} same)");
+                builder.AppendLine($"{indent2}{{");
                 builder.AppendLine($"{indent2}\treturn same;");
+                builder.AppendLine($"{indent2}}}");
             }
             builder.AppendLine($"{indent2}IEnumerable<{itemType}> candidate = val switch");
             builder.AppendLine($"{indent2}{{");

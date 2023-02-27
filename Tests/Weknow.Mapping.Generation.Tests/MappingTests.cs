@@ -463,7 +463,12 @@ namespace Weknow.Text.Json.Extensions.Tests
                                 {
                                     new Record4 {A = 0, B = 10 },
                                     new Record4 {A = 1, B = 11 },
-                                }
+                                },
+                OptionalComplexArray = new[] 
+                                {
+                                    new Record3("x", 3, 4.1F) {W = 2, Z = 7},
+                                    new Record3("y", 1, 8.1F) {W = 2, Z = 9, S = "A"},
+                                } 
             };
             Dictionary<string, object?> d = c.ToDictionary();
             ImmutableDictionary<string, object?> di = c.ToImmutableDictionary();

@@ -8,5 +8,6 @@ namespace Weknow.Generation.SrcGen.Playground
         public int Id { get; init; }
         public string[] SimpleArray { get; init; }
         public Record4[] ComplexArray { get; init; }
+        public Record3[]? OptionalComplexArray { get; init; }
     }
 }
