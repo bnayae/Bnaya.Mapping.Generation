@@ -7,28 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Class1.cs" />
-    <Compile Remove="ClassClassRecord7.cs" />
-    <Compile Remove="ClassRecord6.cs" />
-    <Compile Remove="Record3.cs" />
-    <Compile Remove="Record3N4j.cs" />
-    <Compile Remove="Record4.cs" />
-    <Compile Remove="Record5.cs" />
-    <Compile Remove="RecordCamel.cs" />
-    <Compile Remove="RecordDash.cs" />
-    <Compile Remove="RecordEnum.cs" />
-    <Compile Remove="RecordHierarchic.cs" />
-    <Compile Remove="RecordInheritance.cs" />
-    <Compile Remove="RecordJsonAttribute.cs" />
-    <Compile Remove="RecordJsonPropAttribute.cs" />
-    <Compile Remove="RecordNeo4j3.cs" />
-    <Compile Remove="RecordPascal.cs" />
-    <Compile Remove="RecordScream.cs" />
-    <Compile Remove="Sometime.cs" />
-    <Compile Remove="Struct5.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />

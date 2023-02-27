@@ -12,16 +12,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Weknow.Mapping;
+using static Weknow.Mapping.HelperExtensions;
 
-// TODO: [bnaya 2022-10-24] Add ctor level attribue to select the From ctor
-// TODO: [bnaya 2022-10-24] Add conventions (camel / Pascal)
+namespace Weknow.Mapping;
 
 [Generator]
 public class DictionaryableGenerator : IIncrementalGenerator
 {
-    private const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
-    private static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
     private const string FLAVOR_START = "Flavor";
     private readonly static Regex FLAVOR = new Regex(@"Flavor\s*=\s*[\w|.]*Flavor\.(.*)");
     private const string PROP_CONVENSION_START = "CaseConvention";
@@ -64,7 +61,7 @@ public class DictionaryableGenerator : IIncrementalGenerator
                     AttributePredicate(m1.Name.ToString())));
 
             return hasAttributes;
-        };
+        }
 
         #endregion // ShouldTriggerGeneration
 
@@ -317,8 +314,7 @@ partial {typeKind} {cls}: IDictionaryable, IDictionaryable<{cls}>
     #endregion // To Dictionary
 
 {GetterFn(publicProps)}
-{CastProperties(publicProps, flavor)}
-}}
+{CastProperties(publicProps, flavor)}}}
 ");
         StringBuilder parents = new();
         SyntaxNode? parent = syntax.Parent;
@@ -372,12 +368,15 @@ using Weknow.Mapping;{additionalUsing}
         string indent1 = "\t\t";
         string indent2 = "\t\t\t";
         string indent3 = "\t\t\t\t";
-        string displayType = p.Type.ToDisplayString();
+        string displayType = type.ToDisplayString();
         string? defaultValue = $"default /* ({displayType}) */";
 
         if (isEnumerable)
         {
             var itemType = type.GetCollectionType();
+            bool isDictionaryableCollection = type.IsCollectionDictionariable();
+            string typeOfItem = itemType.EndsWith("?") ? itemType.Substring(0, itemType.Length - 1) : itemType;
+
             // COLLECTION
 
             builder.AppendLine($"{indent}#region Cast_{name}");
@@ -387,10 +386,23 @@ using Weknow.Mapping;{additionalUsing}
             builder.AppendLine($"{indent1}if (TryGetValueOf_{name}(tryGet, out var val))");
             builder.AppendLine($"{indent1}{{");
 
-            builder.AppendLine($"{indent2}var items = (List<object?>)val;");
-            builder.AppendLine($"{indent2}IEnumerable<{itemType}> candidate = items");
-            builder.AppendLine($"{indent2}\t\t\t.Where(m => m != null)");
-            builder.AppendLine($"{indent2}\t\t\t.Select(Cast_{name}_Item);");
+            if (type.Name != "IEnumerable")
+            {
+                builder.AppendLine($"{indent2}if(val is {displayType} same)");
+                builder.AppendLine($"{indent2}\treturn same;");
+            }
+            builder.AppendLine($"{indent2}IEnumerable<{itemType}> candidate = val switch");
+            builder.AppendLine($"{indent2}{{");
+            if (isDictionaryableCollection)
+            {
+                builder.AppendLine($"{indent2}\tIEnumerable<IDictionary<string, object?>> v => v");
+                builder.AppendLine($"{indent2}\t\t\t.Select(v => {typeOfItem}.FromDictionary(v)),");
+            }
+            builder.AppendLine($"{indent2}\tIEnumerable<{itemType}> v => v,");
+            builder.AppendLine($"{indent2}\tIEnumerable<object?> v => v.Where(m => m != null)");
+            builder.AppendLine($"{indent2}\t\t\t.Select(Cast_{name}_Item),");
+            builder.AppendLine($"{indent2}\t_ => throw new NotSupportedException()");
+            builder.AppendLine($"{indent2}}};");
             if (isArray)
                 builder.AppendLine($"{indent2}return candidate.ToArray();");
             else if (isList)
@@ -431,11 +443,14 @@ using Weknow.Mapping;{additionalUsing}
 
             builder.AppendLine($"{indent}private static {itemType} Cast_{name}_Item(object? item)");
             builder.AppendLine($"{indent}{{");
-            builder.AppendLine($"{indent1}// if (m is IDictionary<string, object?> d)");
-            builder.AppendLine($"{indent1}// {{");
-            builder.AppendLine($"{indent2}// var val = {itemType}.FromDictionary(d);");
-            builder.AppendLine($"{indent2}// return val;");
-            builder.AppendLine($"{indent1}// }}");
+            if (isDictionaryableCollection)
+            {
+                builder.AppendLine($"{indent1}if (item is IDictionary<string, object?> d)");
+                builder.AppendLine($"{indent1}{{");
+                builder.AppendLine($"{indent2}var val = {typeOfItem}.FromDictionary(d);");
+                builder.AppendLine($"{indent2}return val;");
+                builder.AppendLine($"{indent1}}}");
+            }
             switch (itemType)
             {
                 case "Neo4j":
@@ -449,7 +464,7 @@ using Weknow.Mapping;{additionalUsing}
                     }
                     else
                     {
-                        builder.AppendLine(@$"{indent1}return Convert.{convertTo}(item);"); 
+                        builder.AppendLine(@$"{indent1}return Convert.{convertTo}(item);");
                     }
                     break;
             }
@@ -464,11 +479,17 @@ using Weknow.Mapping;{additionalUsing}
 
             builder.AppendLine($"{indent}private static {displayType} Cast_{name}(TryGetValue tryGet)");
             builder.AppendLine($"{indent}{{");
-            builder.AppendLine($"{indent1}// if (m is IDictionary<string, object?> d)");
-            builder.AppendLine($"{indent1}// {{");
-            builder.AppendLine($"{indent2}// var val = {displayType}.FromDictionary(d);");
-            builder.AppendLine($"{indent2}// return val;");
-            builder.AppendLine($"{indent1}// }}");
+
+
+            bool isDictionaryable = type.IsDictionariable();
+            if (isDictionaryable)
+            {
+                builder.AppendLine($"{indent1}if(TryGetValueOf_{name}(tryGet, out var value) && value is IDictionary<string, object?> d)");
+                builder.AppendLine($"{indent1}{{");
+                builder.AppendLine($"{indent2}var val = {type.Name}.FromDictionary(d);");
+                builder.AppendLine($"{indent2}return val;");
+                builder.AppendLine($"{indent1}}}");
+            }
 
             FormatSymbol(builder, compatibility, displayType, name, defaultValue, indent1);
             builder.AppendLine($"{indent}}}");
@@ -649,10 +670,10 @@ using Weknow.Mapping;{additionalUsing}
     }
 
     private static void FormatSymbolNeo4JResult(
-        StringBuilder builder, 
+        StringBuilder builder,
         string displayType,
-        string propName, 
-        string indent )
+        string propName,
+        string indent)
     {
         string indent1 = $"{indent}\t";
         if (displayType == "System.TimeSpan")
@@ -686,7 +707,7 @@ using Weknow.Mapping;{additionalUsing}
 
         if (defaultValue == null)
         {
-            builder.AppendLine($"{indent}var __{name}__ = GetValueOf___{name}__(tryGet);");
+            builder.AppendLine($"{indent}var __{name}__ = GetValueOf_{name}(tryGet);");
             if (convertTo == null)
             {
                 builder.AppendLine($"{indent}return ({displayType})__{name}__;");
@@ -698,7 +719,7 @@ using Weknow.Mapping;{additionalUsing}
         }
         else
         {
-            builder.AppendLine($"{indent}if(TryGetValueOf___{name}__(tryGet, out var __{name}__))");
+            builder.AppendLine($"{indent}if(TryGetValueOf_{name}(tryGet, out var __{name}__))");
             builder.AppendLine($"{indent}{{");
             if (convertTo == null)
             {

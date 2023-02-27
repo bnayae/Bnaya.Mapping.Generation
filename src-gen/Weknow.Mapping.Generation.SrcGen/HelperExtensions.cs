@@ -6,6 +6,9 @@ namespace Weknow.Mapping;
 
 public static class HelperExtensions
 {
+    internal const string TARGET_ATTRIBUTE = "DictionaryableAttribute";
+    internal static readonly string TARGET_SHORT_ATTRIBUTE = "Dictionaryable";
+
     private static readonly Regex IS_LIST = new (@"IList\<\w*\>");
 
     public static bool IsEnum(this ITypeSymbol type) => type.BaseType?.Name == "Enum";
@@ -65,6 +68,37 @@ public static class HelperExtensions
             _ => $"({ string.Join(", ", args)})"
         }; 
         return result;
+    }
+
+    public static bool IsCollectionDictionariable(this ITypeSymbol type)
+    {
+        if (type is IArrayTypeSymbol arr)
+        {
+            return arr.ElementType.IsDictionariable();
+        }
+        var parts = type.ToDisplayParts(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        ISymbol[] args = parts
+                        .SkipWhile(m => m.Kind != SymbolDisplayPartKind.Punctuation && m.Symbol?.Name != "<")
+                        .Skip(1)
+                        .TakeWhile(m => m.Kind != SymbolDisplayPartKind.Punctuation ||
+                                    m.ToString() switch { "?" => true, "," => true, _ => false })
+                        .Aggregate(new List<ISymbol>(), (acc, sym) =>
+                        {
+                            if (sym.Symbol != null && sym.Kind != SymbolDisplayPartKind.Punctuation) 
+                                acc.Add(sym.Symbol);
+                            return acc;
+                        }).ToArray();
+        if (args.Length != 1)
+            return false;
+        if (args.First() is ITypeSymbol t)
+            return t.IsDictionariable();
+        return false;
+    }
+    public static bool IsDictionariable(this ITypeSymbol type)
+    {
+        return type.GetAttributes().Any(m => 
+                                        m.AttributeClass?.Name == TARGET_ATTRIBUTE ||
+                                        m.AttributeClass?.Name == TARGET_SHORT_ATTRIBUTE);
     }
 
     public static string ToPropNameConvention(this IPropertySymbol? p, string propConvention)
