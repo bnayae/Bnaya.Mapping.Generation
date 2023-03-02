@@ -583,12 +583,13 @@ using Weknow.Mapping;{additionalUsing}
             return string.Empty;
 
         var builder = new StringBuilder();
-        var set = new ConcurrentDictionary<string, int>();
+        var set = new ConcurrentDictionary<string, double>();
         if (jsonName != null)
             set.TryAdd(jsonName, 0);
         set.TryAdd(name, 1);
         set.TryAdd(name.ToCamelCase(), 2);
-        set.TryAdd(name.ToDash(), 3);
+        set.TryAdd(name.ToDash('_'), 3);
+        set.TryAdd(name.ToDash(), 3.5);
         set.TryAdd(name.ToPascalCase(), 4);
         set.TryAdd(name.ToLower(), 5);
         set.TryAdd(name.ToSCREAMING(), 6);
