@@ -1,10 +1,10 @@
 <Project>
 	<PropertyGroup>
-		<Version>1.0.50</Version>
+		<Version>1.0.51</Version>
 		<PackageReleaseNotes>
-			- ##1.0.47:## 
+			- ##1.0.48:## 
 			  Weknow.Mapping.Contracts should be reference directly
-			- ##1.0.50:## 
+			- ##1.0.51:## 
 			  Flexible property naming convention when converting to an object 
 		</PackageReleaseNotes>
 	</PropertyGroup>
@@ -46,7 +46,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.109" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.110" PrivateAssets="All" />
 	</ItemGroup>
 	
 	<ItemGroup>
