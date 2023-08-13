@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Debug": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\Bnaya.Mapping.Generation.SrcGen.Playground\\Bnaya.Mapping.Generation.SrcGen.Playground.csproj"
+    }
+  }
+}

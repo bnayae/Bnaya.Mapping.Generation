@@ -2,10 +2,6 @@
 	<PropertyGroup>
 		<Version>1.0.52</Version>
 		<PackageReleaseNotes>
-			- ##1.0.49:## 
-			  Weknow.Mapping.Contracts should be reference directly
-			- ##1.0.52:## 
-			  Flexible property naming convention when converting to an object 
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
@@ -19,9 +15,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageTags>Mapping, dictionary, generated, weknow, bnaya</PackageTags>
-		<PackageProjectUrl>https://medium.com/weknow-network</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/weknow-network/Weknow.Mapping.Generation</RepositoryUrl>
+		<PackageTags>Mapping, dictionary, generated, Bnaya, bnaya</PackageTags>
+		<PackageProjectUrl>https://medium.com/Bnayae</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Bnayae/Bnaya.Mapping.Generation</RepositoryUrl>
 		<RepositoryType>GitHub</RepositoryType>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -37,7 +33,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageReleaseNotes>[BREAKING CHANGES]</PackageReleaseNotes>
+		<PackageReleaseNotes></PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup>
